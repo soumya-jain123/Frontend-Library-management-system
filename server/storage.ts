@@ -1,15 +1,17 @@
 import { users, books, borrowings, bookRequests, holdRequests, bookRatings, notifications } from "@shared/schema";
 import type { 
   User, Book, Borrowing, BookRequest, HoldRequest, BookRating, Notification,
-  InsertUser, InsertBook, InsertBorrowing, InsertBookRequest, InsertHoldRequest, 
-  InsertBookRating, InsertNotification 
+  InsertUser, InsertBook, InsertBorrowing, InsertBookRequest, InsertHoldRequest,
+  InsertBookRating, InsertNotification
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, lt, isNull, desc, like, or } from "drizzle-orm";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
-// Interface for storage operations
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -67,350 +69,308 @@ export interface IStorage {
   sessionStore: session.SessionStore;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private books: Map<number, Book>;
-  private borrowings: Map<number, Borrowing>;
-  private bookRequests: Map<number, BookRequest>;
-  private holdRequests: Map<number, HoldRequest>;
-  private bookRatings: Map<number, BookRating>;
-  private notifications: Map<number, Notification>;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
-  
-  private userIdCounter: number;
-  private bookIdCounter: number;
-  private borrowingIdCounter: number;
-  private bookRequestIdCounter: number;
-  private holdRequestIdCounter: number;
-  private bookRatingIdCounter: number;
-  private notificationIdCounter: number;
-  
+
   constructor() {
-    this.users = new Map();
-    this.books = new Map();
-    this.borrowings = new Map();
-    this.bookRequests = new Map();
-    this.holdRequests = new Map();
-    this.bookRatings = new Map();
-    this.notifications = new Map();
-    
-    this.userIdCounter = 1;
-    this.bookIdCounter = 1;
-    this.borrowingIdCounter = 1;
-    this.bookRequestIdCounter = 1;
-    this.holdRequestIdCounter = 1;
-    this.bookRatingIdCounter = 1;
-    this.notificationIdCounter = 1;
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // 24 hours
-    });
-    
-    // Initialize with sample admin user
-    this.createUser({
-      username: "admin",
-      password: "admin123", // Will be hashed in auth.ts
-      name: "Admin User",
-      email: "admin@library.com",
-      role: "admin",
-      active: true
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
     });
   }
-  
+
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-  
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username.toLowerCase() === username.toLowerCase()
-    );
-  }
-  
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
-  
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
-  
+
   async getUsersByRole(role: string): Promise<User[]> {
-    return Array.from(this.users.values()).filter(
-      (user) => user.role === role
-    );
+    return await db.select().from(users).where(eq(users.role, role as any));
   }
-  
+
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
+    const [user] = await db.update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async toggleUserStatus(id: number): Promise<User | undefined> {
+    const user = await this.getUser(id);
     if (!user) return undefined;
     
-    const updatedUser = { ...user, ...userData };
-    this.users.set(id, updatedUser);
+    const [updatedUser] = await db.update(users)
+      .set({ active: !user.active })
+      .where(eq(users.id, id))
+      .returning();
     return updatedUser;
   }
-  
-  async toggleUserStatus(id: number): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    user.active = !user.active;
-    this.users.set(id, user);
-    return user;
-  }
-  
+
   // Book operations
   async getBook(id: number): Promise<Book | undefined> {
-    return this.books.get(id);
-  }
-  
-  async getBookByISBN(isbn: string): Promise<Book | undefined> {
-    return Array.from(this.books.values()).find(
-      (book) => book.isbn === isbn
-    );
-  }
-  
-  async createBook(insertBook: InsertBook): Promise<Book> {
-    const id = this.bookIdCounter++;
-    const book: Book = { ...insertBook, id };
-    this.books.set(id, book);
+    const [book] = await db.select().from(books).where(eq(books.id, id));
     return book;
   }
-  
+
+  async getBookByISBN(isbn: string): Promise<Book | undefined> {
+    const [book] = await db.select().from(books).where(eq(books.isbn, isbn));
+    return book;
+  }
+
+  async createBook(insertBook: InsertBook): Promise<Book> {
+    const [book] = await db.insert(books).values(insertBook).returning();
+    return book;
+  }
+
   async getAllBooks(): Promise<Book[]> {
-    return Array.from(this.books.values());
+    return await db.select().from(books);
   }
-  
+
   async updateBook(id: number, bookData: Partial<Book>): Promise<Book | undefined> {
-    const book = this.books.get(id);
-    if (!book) return undefined;
-    
-    const updatedBook = { ...book, ...bookData };
-    this.books.set(id, updatedBook);
-    return updatedBook;
+    const [book] = await db.update(books)
+      .set(bookData)
+      .where(eq(books.id, id))
+      .returning();
+    return book;
   }
-  
+
   async deleteBook(id: number): Promise<boolean> {
-    return this.books.delete(id);
+    const result = await db.delete(books).where(eq(books.id, id));
+    return true; // If no error was thrown, the delete was successful
   }
-  
+
   async searchBooks(query: string): Promise<Book[]> {
-    const lowercaseQuery = query.toLowerCase();
-    return Array.from(this.books.values()).filter(
-      (book) => 
-        book.title.toLowerCase().includes(lowercaseQuery) ||
-        book.author.toLowerCase().includes(lowercaseQuery) ||
-        book.isbn.toLowerCase().includes(lowercaseQuery) ||
-        book.category.toLowerCase().includes(lowercaseQuery)
+    return await db.select().from(books).where(
+      or(
+        like(books.title, `%${query}%`),
+        like(books.author, `%${query}%`),
+        like(books.isbn, `%${query}%`),
+        like(books.category, `%${query}%`)
+      )
     );
   }
-  
+
   // Borrowing operations
   async createBorrowing(insertBorrowing: InsertBorrowing): Promise<Borrowing> {
-    const id = this.borrowingIdCounter++;
-    const borrowing: Borrowing = { 
-      ...insertBorrowing, 
-      id, 
-      borrowDate: new Date(),
-      returnDate: null 
-    };
-    this.borrowings.set(id, borrowing);
-    
-    // Update book availability
-    const book = this.books.get(borrowing.bookId);
-    if (book && book.available > 0) {
-      book.available -= 1;
-      this.books.set(book.id, book);
-    }
-    
+    // Update the book's available count
+    await db.update(books)
+      .set({ available: (b) => b.available - 1 })
+      .where(eq(books.id, insertBorrowing.bookId));
+      
+    const [borrowing] = await db.insert(borrowings)
+      .values(insertBorrowing)
+      .returning();
     return borrowing;
   }
-  
+
   async getBorrowingsByUser(userId: number): Promise<Borrowing[]> {
-    return Array.from(this.borrowings.values()).filter(
-      (borrowing) => borrowing.userId === userId
-    );
+    return await db.select()
+      .from(borrowings)
+      .where(eq(borrowings.userId, userId))
+      .orderBy(desc(borrowings.borrowDate));
   }
-  
+
   async getBorrowingsByBook(bookId: number): Promise<Borrowing[]> {
-    return Array.from(this.borrowings.values()).filter(
-      (borrowing) => borrowing.bookId === bookId
-    );
+    return await db.select()
+      .from(borrowings)
+      .where(eq(borrowings.bookId, bookId))
+      .orderBy(desc(borrowings.borrowDate));
   }
-  
+
   async getActiveBorrowings(): Promise<Borrowing[]> {
-    return Array.from(this.borrowings.values()).filter(
-      (borrowing) => borrowing.returnDate === null
-    );
+    return await db.select()
+      .from(borrowings)
+      .where(isNull(borrowings.returnDate))
+      .orderBy(desc(borrowings.borrowDate));
   }
-  
+
   async getOverdueBorrowings(): Promise<Borrowing[]> {
     const now = new Date();
-    return Array.from(this.borrowings.values()).filter(
-      (borrowing) => 
-        borrowing.returnDate === null && 
-        new Date(borrowing.dueDate) < now
-    );
+    return await db.select()
+      .from(borrowings)
+      .where(and(
+        isNull(borrowings.returnDate),
+        lt(borrowings.dueDate, now)
+      ))
+      .orderBy(desc(borrowings.borrowDate));
   }
-  
+
   async returnBook(id: number, returnDate: Date, fine: number): Promise<Borrowing | undefined> {
-    const borrowing = this.borrowings.get(id);
+    // Get the borrowing to update the book's available count
+    const [borrowing] = await db.select()
+      .from(borrowings)
+      .where(eq(borrowings.id, id));
+    
     if (!borrowing) return undefined;
     
-    borrowing.returnDate = returnDate;
-    borrowing.fine = fine;
-    borrowing.status = 'returned';
-    this.borrowings.set(id, borrowing);
+    // Update the book's available count
+    await db.update(books)
+      .set({ available: (b) => b.available + 1 })
+      .where(eq(books.id, borrowing.bookId));
     
-    // Update book availability
-    const book = this.books.get(borrowing.bookId);
-    if (book) {
-      book.available += 1;
-      this.books.set(book.id, book);
-    }
-    
-    return borrowing;
+    // Update the borrowing record
+    const [updatedBorrowing] = await db.update(borrowings)
+      .set({
+        returnDate: returnDate,
+        fine: fine,
+        status: 'returned'
+      })
+      .where(eq(borrowings.id, id))
+      .returning();
+      
+    return updatedBorrowing;
   }
-  
+
   // Book request operations
   async createBookRequest(insertRequest: InsertBookRequest): Promise<BookRequest> {
-    const id = this.bookRequestIdCounter++;
-    const request: BookRequest = { 
-      ...insertRequest, 
-      id, 
-      requestDate: new Date(),
-      approvedBy: null 
-    };
-    this.bookRequests.set(id, request);
+    const [request] = await db.insert(bookRequests)
+      .values(insertRequest)
+      .returning();
     return request;
   }
-  
+
   async getBookRequestsByUser(userId: number): Promise<BookRequest[]> {
-    return Array.from(this.bookRequests.values()).filter(
-      (request) => request.userId === userId
-    );
+    return await db.select()
+      .from(bookRequests)
+      .where(eq(bookRequests.userId, userId))
+      .orderBy(desc(bookRequests.requestDate));
   }
-  
+
   async getAllBookRequests(): Promise<BookRequest[]> {
-    return Array.from(this.bookRequests.values());
+    return await db.select()
+      .from(bookRequests)
+      .orderBy(desc(bookRequests.requestDate));
   }
-  
+
   async updateBookRequestStatus(id: number, status: string, approvedBy?: number): Promise<BookRequest | undefined> {
-    const request = this.bookRequests.get(id);
-    if (!request) return undefined;
-    
-    request.status = status;
-    if (approvedBy) {
-      request.approvedBy = approvedBy;
+    const updateData: any = { status };
+    if (approvedBy !== undefined) {
+      updateData.approvedBy = approvedBy;
     }
-    this.bookRequests.set(id, request);
+    
+    const [request] = await db.update(bookRequests)
+      .set(updateData)
+      .where(eq(bookRequests.id, id))
+      .returning();
     return request;
   }
-  
+
   // Hold request operations
   async createHoldRequest(insertRequest: InsertHoldRequest): Promise<HoldRequest> {
-    const id = this.holdRequestIdCounter++;
-    const request: HoldRequest = { 
-      ...insertRequest, 
-      id, 
-      requestDate: new Date()
-    };
-    this.holdRequests.set(id, request);
+    const [request] = await db.insert(holdRequests)
+      .values(insertRequest)
+      .returning();
     return request;
   }
-  
+
   async getHoldRequestsByUser(userId: number): Promise<HoldRequest[]> {
-    return Array.from(this.holdRequests.values()).filter(
-      (request) => request.userId === userId
-    );
+    return await db.select()
+      .from(holdRequests)
+      .where(eq(holdRequests.userId, userId))
+      .orderBy(desc(holdRequests.requestDate));
   }
-  
+
   async getHoldRequestsByBook(bookId: number): Promise<HoldRequest[]> {
-    return Array.from(this.holdRequests.values()).filter(
-      (request) => request.bookId === bookId
-    );
+    return await db.select()
+      .from(holdRequests)
+      .where(eq(holdRequests.bookId, bookId))
+      .orderBy(desc(holdRequests.requestDate));
   }
-  
+
   async updateHoldRequestStatus(id: number, status: string): Promise<HoldRequest | undefined> {
-    const request = this.holdRequests.get(id);
-    if (!request) return undefined;
-    
-    request.status = status;
-    this.holdRequests.set(id, request);
+    const [request] = await db.update(holdRequests)
+      .set({ status })
+      .where(eq(holdRequests.id, id))
+      .returning();
     return request;
   }
-  
+
   // Book rating operations
   async createBookRating(insertRating: InsertBookRating): Promise<BookRating> {
-    const id = this.bookRatingIdCounter++;
-    const rating: BookRating = { 
-      ...insertRating, 
-      id, 
-      ratingDate: new Date()
-    };
-    this.bookRatings.set(id, rating);
+    const [rating] = await db.insert(bookRatings)
+      .values(insertRating)
+      .returning();
     return rating;
   }
-  
+
   async getBookRatingsByBook(bookId: number): Promise<BookRating[]> {
-    return Array.from(this.bookRatings.values()).filter(
-      (rating) => rating.bookId === bookId
-    );
+    return await db.select()
+      .from(bookRatings)
+      .where(eq(bookRatings.bookId, bookId))
+      .orderBy(desc(bookRatings.ratingDate));
   }
-  
+
   async getBookRatingsByUser(userId: number): Promise<BookRating[]> {
-    return Array.from(this.bookRatings.values()).filter(
-      (rating) => rating.userId === userId
-    );
+    return await db.select()
+      .from(bookRatings)
+      .where(eq(bookRatings.userId, userId))
+      .orderBy(desc(bookRatings.ratingDate));
   }
-  
+
   // Notification operations
   async createNotification(insertNotification: InsertNotification): Promise<Notification> {
-    const id = this.notificationIdCounter++;
-    const notification: Notification = { 
-      ...insertNotification, 
-      id, 
-      createdAt: new Date()
-    };
-    this.notifications.set(id, notification);
+    const [notification] = await db.insert(notifications)
+      .values(insertNotification)
+      .returning();
     return notification;
   }
-  
+
   async getNotificationsByUser(userId: number): Promise<Notification[]> {
-    return Array.from(this.notifications.values())
-      .filter((notification) => notification.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return await db.select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
   }
-  
+
   async markNotificationAsRead(id: number): Promise<Notification | undefined> {
-    const notification = this.notifications.get(id);
-    if (!notification) return undefined;
-    
-    notification.read = true;
-    this.notifications.set(id, notification);
+    const [notification] = await db.update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, id))
+      .returning();
     return notification;
   }
-  
+
   // Report operations
   async getFineReportByUser(userId: number): Promise<number> {
-    return Array.from(this.borrowings.values())
-      .filter((borrowing) => borrowing.userId === userId)
-      .reduce((total, borrowing) => total + (borrowing.fine || 0), 0);
+    const result = await db
+      .select({ totalFines: db.fn.sum(borrowings.fine) })
+      .from(borrowings)
+      .where(eq(borrowings.userId, userId));
+      
+    return Number(result[0]?.totalFines || 0);
   }
-  
+
   async getTotalFinesByMonth(month: number, year: number): Promise<number> {
-    return Array.from(this.borrowings.values())
-      .filter((borrowing) => {
-        if (!borrowing.returnDate) return false;
-        const returnDate = new Date(borrowing.returnDate);
-        return returnDate.getMonth() === month && returnDate.getFullYear() === year;
-      })
-      .reduce((total, borrowing) => total + (borrowing.fine || 0), 0);
+    // This is more complex in SQL, but here's a simplified version
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    
+    const result = await db
+      .select({ totalFines: db.fn.sum(borrowings.fine) })
+      .from(borrowings)
+      .where(and(
+        borrowings.returnDate >= startOfMonth,
+        borrowings.returnDate <= endOfMonth
+      ));
+      
+    return Number(result[0]?.totalFines || 0);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

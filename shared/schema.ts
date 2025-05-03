@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, pgEnum, foreignKey, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // Enum for user roles
 export const userRoleEnum = pgEnum('user_role', ['admin', 'librarian', 'student']);
@@ -28,38 +29,38 @@ export const books = pgTable("books", {
   coverImage: text("cover_image"),
   quantity: integer("quantity").notNull().default(1),
   available: integer("available").notNull().default(1),
-  addedBy: integer("added_by").notNull(),
+  addedBy: integer("added_by").notNull().references(() => users.id),
 });
 
 // Book borrowing table
 export const borrowings = pgTable("borrowings", {
   id: serial("id").primaryKey(),
-  bookId: integer("book_id").notNull(),
-  userId: integer("user_id").notNull(),
+  bookId: integer("book_id").notNull().references(() => books.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   borrowDate: timestamp("borrow_date").notNull().defaultNow(),
   dueDate: timestamp("due_date").notNull(),
   returnDate: timestamp("return_date"),
   fine: integer("fine").default(0),
   status: text("status").notNull().default('borrowed'), // borrowed, returned, overdue
-  issuedBy: integer("issued_by").notNull(),
+  issuedBy: integer("issued_by").notNull().references(() => users.id),
 });
 
 // Book requests table
 export const bookRequests = pgTable("book_requests", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   author: text("author"),
   status: text("status").notNull().default('pending'), // pending, approved, rejected
   requestDate: timestamp("request_date").notNull().defaultNow(),
-  approvedBy: integer("approved_by"),
+  approvedBy: integer("approved_by").references(() => users.id),
 });
 
 // Book hold requests table
 export const holdRequests = pgTable("hold_requests", {
   id: serial("id").primaryKey(),
-  bookId: integer("book_id").notNull(),
-  userId: integer("user_id").notNull(),
+  bookId: integer("book_id").notNull().references(() => books.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   requestDate: timestamp("request_date").notNull().defaultNow(),
   expiryDate: timestamp("expiry_date").notNull(),
   status: text("status").notNull().default('pending'), // pending, approved, rejected, expired
@@ -68,8 +69,8 @@ export const holdRequests = pgTable("hold_requests", {
 // Book ratings and reviews
 export const bookRatings = pgTable("book_ratings", {
   id: serial("id").primaryKey(),
-  bookId: integer("book_id").notNull(),
-  userId: integer("user_id").notNull(),
+  bookId: integer("book_id").notNull().references(() => books.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   rating: integer("rating").notNull(),
   review: text("review"),
   ratingDate: timestamp("rating_date").notNull().defaultNow(),
@@ -78,7 +79,7 @@ export const bookRatings = pgTable("book_ratings", {
 // Notifications table
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
   message: text("message").notNull(),
   type: text("type").notNull(), // due_date, fine, approval, etc.
   read: boolean("read").notNull().default(false),
@@ -120,3 +121,81 @@ export const loginSchema = z.object({
 });
 
 export type LoginData = z.infer<typeof loginSchema>;
+
+// Define relations between tables
+export const userRelations = relations(users, ({ many }) => ({
+  books: many(books),
+  borrowings: many(borrowings, { relationName: "borrower" }),
+  issuedBorrowings: many(borrowings, { relationName: "issuer" }),
+  bookRequests: many(bookRequests),
+  holdRequests: many(holdRequests),
+  bookRatings: many(bookRatings),
+  notifications: many(notifications),
+}));
+
+export const bookRelations = relations(books, ({ one, many }) => ({
+  addedBy: one(users, {
+    fields: [books.addedBy],
+    references: [users.id],
+  }),
+  borrowings: many(borrowings),
+  holdRequests: many(holdRequests),
+  bookRatings: many(bookRatings),
+}));
+
+export const borrowingRelations = relations(borrowings, ({ one }) => ({
+  book: one(books, {
+    fields: [borrowings.bookId],
+    references: [books.id],
+  }),
+  borrower: one(users, {
+    fields: [borrowings.userId],
+    references: [users.id],
+    relationName: "borrower",
+  }),
+  issuer: one(users, {
+    fields: [borrowings.issuedBy],
+    references: [users.id],
+    relationName: "issuer",
+  }),
+}));
+
+export const bookRequestRelations = relations(bookRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [bookRequests.userId],
+    references: [users.id],
+  }),
+  approver: one(users, {
+    fields: [bookRequests.approvedBy],
+    references: [users.id],
+  }),
+}));
+
+export const holdRequestRelations = relations(holdRequests, ({ one }) => ({
+  book: one(books, {
+    fields: [holdRequests.bookId],
+    references: [books.id],
+  }),
+  user: one(users, {
+    fields: [holdRequests.userId],
+    references: [users.id],
+  }),
+}));
+
+export const bookRatingRelations = relations(bookRatings, ({ one }) => ({
+  book: one(books, {
+    fields: [bookRatings.bookId],
+    references: [books.id],
+  }),
+  user: one(users, {
+    fields: [bookRatings.userId],
+    references: [users.id],
+  }),
+}));
+
+export const notificationRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
