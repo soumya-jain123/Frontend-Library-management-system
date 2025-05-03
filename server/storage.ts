@@ -66,11 +66,11 @@ export interface IStorage {
   getTotalFinesByMonth(month: number, year: number): Promise<number>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
@@ -168,11 +168,16 @@ export class DatabaseStorage implements IStorage {
 
   // Borrowing operations
   async createBorrowing(insertBorrowing: InsertBorrowing): Promise<Borrowing> {
-    // Update the book's available count
-    await db.update(books)
-      .set({ available: (b) => b.available - 1 })
-      .where(eq(books.id, insertBorrowing.bookId));
-      
+    // First get the current book info
+    const [book] = await db.select().from(books).where(eq(books.id, insertBorrowing.bookId));
+    
+    if (book) {
+      // Update the book's available count directly without using a function
+      await db.update(books)
+        .set({ available: book.available - 1 })
+        .where(eq(books.id, insertBorrowing.bookId));
+    }
+    
     const [borrowing] = await db.insert(borrowings)
       .values(insertBorrowing)
       .returning();
@@ -219,10 +224,14 @@ export class DatabaseStorage implements IStorage {
     
     if (!borrowing) return undefined;
     
-    // Update the book's available count
-    await db.update(books)
-      .set({ available: (b) => b.available + 1 })
-      .where(eq(books.id, borrowing.bookId));
+    // Get the book and update its available count
+    const [book] = await db.select().from(books).where(eq(books.id, borrowing.bookId));
+    
+    if (book) {
+      await db.update(books)
+        .set({ available: book.available + 1 })
+        .where(eq(books.id, borrowing.bookId));
+    }
     
     // Update the borrowing record
     const [updatedBorrowing] = await db.update(borrowings)
@@ -348,12 +357,14 @@ export class DatabaseStorage implements IStorage {
 
   // Report operations
   async getFineReportByUser(userId: number): Promise<number> {
-    const result = await db
-      .select({ totalFines: db.fn.sum(borrowings.fine) })
-      .from(borrowings)
-      .where(eq(borrowings.userId, userId));
-      
-    return Number(result[0]?.totalFines || 0);
+    // Use raw SQL query since we're having issues with the ORM approach
+    const result = await pool.query(`
+      SELECT SUM(fine) as total_fines
+      FROM borrowings
+      WHERE user_id = $1
+    `, [userId]);
+    
+    return Number(result.rows[0]?.total_fines || 0);
   }
 
   async getTotalFinesByMonth(month: number, year: number): Promise<number> {
@@ -361,15 +372,14 @@ export class DatabaseStorage implements IStorage {
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
     
-    const result = await db
-      .select({ totalFines: db.fn.sum(borrowings.fine) })
-      .from(borrowings)
-      .where(and(
-        borrowings.returnDate >= startOfMonth,
-        borrowings.returnDate <= endOfMonth
-      ));
-      
-    return Number(result[0]?.totalFines || 0);
+    // Use raw SQL query since we're having issues with the ORM approach
+    const result = await pool.query(`
+      SELECT SUM(fine) as total_fines
+      FROM borrowings
+      WHERE return_date >= $1 AND return_date <= $2
+    `, [startOfMonth, endOfMonth]);
+    
+    return Number(result.rows[0]?.total_fines || 0);
   }
 }
 
