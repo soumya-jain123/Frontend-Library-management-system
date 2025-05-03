@@ -1,0 +1,77 @@
+Project Title: Smart Library Management System
+
+Problem Statement
+Develop a Java-based Library Management System with a GUI that allows users to manage books, issue returns, track fines, and generate reports efficiently. The system should be secure, user-friendly, and scalable.
+
+Users of the System
+1.	Admin
+2.	Librarian
+3.	Students
+
+Functional Requirements
+1. Admin
+•	Add/View/Delete librarians
+•	View fine reports (Individual, Total month-wise)
+•	Generate overall system reports
+•	Manage user accounts (Activate/Deactivate)
+•	Logout
+2. Librarian
+•	Add/View/Delete books
+•	Issue books to students
+•	View issued books
+•	Return books and calculate fines
+•	Manage student records
+•	Request approval 
+•	View overdue books and notify students
+•	Logout
+3. Students
+•	Borrow books
+•	Return books and pay fines
+•	View borrowing status
+•	Request new books
+•	Request for hold books ( for a week)
+•	Reissue borrowed books
+•	View notifications (due dates, fines, approvals)
+•	Logout
+
+
+
+
+Additional Features
+•	QR Code Scanner: Scan book IDs and student IDs for fast processing.
+•	Email Notifications: Send reminders for due dates and fines.
+•	Dashboard: Interactive dashboard for admins and librarians to track library status.
+•	Multi-User Login: Secure authentication with role-based access control.
+•	Book Rating & Reviews: Allow students to rate and review books.
+•	Search & Filter: Advanced book search based on title, author, or category.
+•	Auto Fine Calculation: System auto-calculates fines based on due date.
+•	Dark Mode: User interface toggle for better usability.
+•	Database Backup & Restore: Ensures data security and recovery.
+
+
+Output Screens
+1. Login Screen
+•	Fields: Username, Password, Role Selection (Admin/Librarian/Student)
+•	Buttons: Login, Forgot Password
+2. Admin Dashboard
+•	Options: Manage Librarians, View Reports, Fine Management, User Account Management, Logout
+3. Librarian Dashboard
+•	Options: Manage Books, Issue Books, View Issued Books, Return Books, Student Records, Overdue Notifications, Logout
+4. Student Dashboard
+•	Options: Borrow Books, Return Books, View Status, Request New Books, Reissue Books, Notifications, Logout
+5. Book Management Screen (Librarian)
+•	Fields: Book ID, Title, Author, Availability Status
+•	Actions: Add Book, View Books, Delete Book
+6. Borrow Book Screen (Student)
+•	Fields: Student ID, Book ID
+•	Actions: Borrow Book (With Success Message)
+7. Return Book Screen (Librarian)
+•	Fields: Student ID, Book ID, Days Late (if any)
+•	Actions: Calculate Fine, Confirm Return
+8. Reports Screen (Admin)
+•	View: Available Books List, Borrowed Books List, Fine Reports
+9. Notification Screen (Student & Librarian)
+•	Notifications: Due Date Reminders, Fine Alerts, Approval Status
+10. Settings Screen
+•	Options: Dark Mode, Change Password, Backup & Restore
+
