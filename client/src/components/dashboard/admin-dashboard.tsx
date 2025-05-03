@@ -1,0 +1,215 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { 
+  Users, BookOpen, BarChart3, Layers,
+  AlertOctagon, CheckCircle
+} from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { motion } from "framer-motion";
+import StatsCard from "@/components/stats/stats-card";
+import NotificationList from "@/components/notification/notification-list";
+
+const AdminDashboard = () => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Fetch librarians count
+  const { data: librarians } = useQuery({
+    queryKey: ["/api/users/librarian"],
+    enabled: !!user && user.role === "admin"
+  });
+
+  // Fetch students count
+  const { data: students } = useQuery({
+    queryKey: ["/api/users/student"],
+    enabled: !!user && user.role === "admin"
+  });
+
+  // Fetch total fines for current month
+  const currentDate = new Date();
+  const { data: fineData } = useQuery({
+    queryKey: [`/api/reports/fines/month/${currentDate.getMonth()}/${currentDate.getFullYear()}`],
+    enabled: !!user && user.role === "admin"
+  });
+
+  // Fetch book requests
+  const { data: bookRequests } = useQuery({
+    queryKey: ["/api/book-requests"],
+    enabled: !!user && user.role === "admin"
+  });
+
+  // Fetch notifications
+  const { data: notifications } = useQuery({
+    queryKey: ["/api/notifications"],
+    enabled: !!user
+  });
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Welcome back, {user?.name}! Here's an overview of the library system.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard 
+          title="Total Librarians"
+          value={librarians?.length || 0}
+          icon={<Users className="h-5 w-5" />}
+          description="Active staff members"
+          className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+        />
+        
+        <StatsCard 
+          title="Total Students"
+          value={students?.length || 0}
+          icon={<Users className="h-5 w-5" />}
+          description="Registered users"
+          className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+        />
+        
+        <StatsCard 
+          title="Monthly Fines"
+          value={`$${fineData?.totalFines || 0}`}
+          icon={<BarChart3 className="h-5 w-5" />}
+          description="Revenue from fines"
+          className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+        />
+        
+        <StatsCard 
+          title="Book Requests"
+          value={bookRequests?.filter(r => r.status === "pending").length || 0}
+          icon={<Layers className="h-5 w-5" />}
+          description="Pending approvals"
+          className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+        />
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="overview">System Overview</TabsTrigger>
+          <TabsTrigger value="notifications">Recent Notifications</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Quick Actions</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="outline" asChild className="h-24 flex flex-col items-center justify-center gap-2">
+                    <Link href="/admin/librarians">
+                      <Users className="h-5 w-5" />
+                      <span>Manage Librarians</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild className="h-24 flex flex-col items-center justify-center gap-2">
+                    <Link href="/admin/reports">
+                      <BarChart3 className="h-5 w-5" />
+                      <span>View Reports</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center gap-2" asChild>
+                    <Link href="/admin/reports?tab=fines">
+                      <AlertOctagon className="h-5 w-5" />
+                      <span>Fine Management</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center gap-2" asChild>
+                    <Link href="/settings">
+                      <CheckCircle className="h-5 w-5" />
+                      <span>Approve Requests</span>
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">System Health</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Database Status</span>
+                    <span className="text-sm flex items-center text-green-500">
+                      <CheckCircle className="h-4 w-4 mr-1" /> Operational
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Active Users</span>
+                    <span className="text-sm">{(students?.length || 0) + (librarians?.length || 0) + 1} Users</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Pending Book Requests</span>
+                    <span className="text-sm">{bookRequests?.filter(r => r.status === "pending").length || 0} Requests</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">System Uptime</span>
+                    <span className="text-sm">24 days</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Recent Activity</h3>
+                <Button variant="ghost" size="sm">View All</Button>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-md">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">New book added: "Advanced Programming Techniques"</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Added by Librarian Jane - 2 hours ago</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-md">
+                  <Users className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <p className="text-sm font-medium">New student registered: Sarah Johnson</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Student ID: S12345 - Yesterday</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-md">
+                  <AlertOctagon className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <p className="text-sm font-medium">Fine collected: $12.50</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">From Student Michael - 3 days ago</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="notifications">
+          <Card>
+            <CardContent className="pt-6">
+              <NotificationList notifications={notifications || []} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </motion.div>
+  );
+};
+
+export default AdminDashboard;
