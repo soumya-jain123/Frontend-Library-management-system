@@ -337,11 +337,11 @@ const AuthPage = () => {
 
       {/* Right side - Hero section */}
       <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-900 dark:to-primary-700 opacity-90 z-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black to-red-900 dark:from-black dark:to-red-950 opacity-70 z-10"></div>
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1562932831-afcfe48b5786?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"
+            backgroundImage: "url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"
           }}
         ></div>
         <div className="relative z-20 flex flex-col justify-center text-white p-12">
