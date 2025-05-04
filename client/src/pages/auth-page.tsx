@@ -39,7 +39,6 @@ const AuthPage = () => {
     defaultValues: {
       username: "",
       password: "",
-      role: "student",
     },
   });
 
@@ -196,29 +195,6 @@ const AuthPage = () => {
                   <TabsContent value="login" className="space-y-4">
                     <Form {...loginForm}>
                       <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                        {/* <FormField
-                          control={loginForm.control}
-                          name="role"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Role</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select your role" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="student">Student</SelectItem>
-                                  <SelectItem value="librarian">Librarian</SelectItem>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        /> */}
-
                         <FormField
                           control={loginForm.control}
                           name="username"

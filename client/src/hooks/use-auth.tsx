@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
-  role: z.enum(["student", "librarian", "admin"])
 });
 
 export const registerSchema = z.object({
@@ -44,10 +43,18 @@ const loginApi = async (data: LoginData): Promise<User> => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
+  // Determine role based on username for testing purposes
+  let role = "student";
+  if (data.username.includes("admin")) {
+    role = "admin";
+  } else if (data.username.includes("librarian")) {
+    role = "librarian";
+  }
+  
   return {
     id: 1,
     username: data.username,
-    role: data.role,
+    role: role,
     name: "Test User",
     email: "test@example.com",
     active: true
@@ -82,6 +89,17 @@ const useLoginMutation = (setUser: (user: User | null) => void) => {
     onSuccess: (user) => {
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
+      
+      // Redirect to role-specific dashboard
+      if (user.role === "admin") {
+        window.location.href = "/admin";
+      } else if (user.role === "librarian") {
+        window.location.href = "/librarian";
+      } else if (user.role === "student") {
+        window.location.href = "/student";
+      } else {
+        window.location.href = "/";
+      }
     }
   });
 };

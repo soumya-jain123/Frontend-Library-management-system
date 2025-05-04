@@ -278,31 +278,33 @@ const ReturnBooks = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <TabsContent value="borrowed" className="mt-0">
-                <BookTable
-                  books={formatBorrowingsForTable(filteredBorrowings)}
-                  type="borrowed"
-                  onRenew={handleRenew}
-                  onReturn={(id) => {
-                    const borrowing = activeBorrowings?.find(b => b.id === id);
-                    if (borrowing) handleReturn(borrowing);
-                  }}
-                  isLoading={isLoading}
-                />
-              </TabsContent>
-              
-              <TabsContent value="overdue" className="mt-0">
-                <BookTable
-                  books={formatBorrowingsForTable(filteredBorrowings)}
-                  type="overdue"
-                  onRenew={handleRenew}
-                  onReturn={(id) => {
-                    const borrowing = overdueBorrowings?.find(b => b.id === id);
-                    if (borrowing) handleReturn(borrowing);
-                  }}
-                  isLoading={isLoading}
-                />
-              </TabsContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsContent value="borrowed" className="mt-0">
+                  <BookTable
+                    books={formatBorrowingsForTable(filteredBorrowings)}
+                    type="borrowed"
+                    onRenew={handleRenew}
+                    onReturn={(id) => {
+                      const borrowing = activeBorrowings?.find(b => b.id === id);
+                      if (borrowing) handleReturn(borrowing);
+                    }}
+                    isLoading={isLoading}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="overdue" className="mt-0">
+                  <BookTable
+                    books={formatBorrowingsForTable(filteredBorrowings)}
+                    type="overdue"
+                    onRenew={handleRenew}
+                    onReturn={(id) => {
+                      const borrowing = overdueBorrowings?.find(b => b.id === id);
+                      if (borrowing) handleReturn(borrowing);
+                    }}
+                    isLoading={isLoading}
+                  />
+                </TabsContent>
+              </Tabs>
             </CardContent>
             <CardFooter className="bg-slate-50 dark:bg-slate-800/50 border-t">
               <div className="text-sm text-slate-500 dark:text-slate-400">

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import NotFound from "@/pages/not-found";
+import UnauthorizedPage from "@/pages/unauthorized";
 import AuthPage from "@/pages/auth-page";
 import HomePage from "@/pages/home-page";
 import ManageLibrarians from "@/pages/admin/manage-librarians";
@@ -26,37 +27,109 @@ import { type PropsWithChildren } from "react";
 import DashboardLayout from "@/components/layouts/dashboard-layout";
 import AdminDashboard from "@/components/dashboard/admin-dashboard";
 import LibrarianDashboard from "@/components/dashboard/librarian-dashboard";
+import StudentDashboard from "@/components/dashboard/student-dashboard";
 
-// Then inside your <Switch> in the Router component:
+// Create wrapped dashboard components with layout
+const WrappedAdminDashboard = () => (
+  <DashboardLayout>
+    <AdminDashboard />
+  </DashboardLayout>
+);
+
+const WrappedLibrarianDashboard = () => (
+  <DashboardLayout>
+    <LibrarianDashboard />
+  </DashboardLayout>
+);
+
+const WrappedStudentDashboard = () => (
+  <DashboardLayout>
+    <StudentDashboard />
+  </DashboardLayout>
+);
 
 function Router() {
   return (
     <Switch>
       {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
+      <Route path="/unauthorized" component={UnauthorizedPage} />
       
-      {/* Protected routes */}
+      {/* Redirect from root to role-specific dashboard */}
       <ProtectedRoute path="/" component={HomePage} />
       
-      {/* <ProtectedRoute path="/admin" component={AdminDashboard} />
-      <ProtectedRoute path="/librarian" component={LibrarianDashboard} />
-      <ProtectedRoute path="/user" component={DashboardLayout} /> */}
-
+      {/* Role-specific dashboards */}
+      <ProtectedRoute 
+        path="/admin" 
+        component={WrappedAdminDashboard} 
+        allowedRoles={["admin"]} 
+      />
+      <ProtectedRoute 
+        path="/librarian" 
+        component={WrappedLibrarianDashboard} 
+        allowedRoles={["librarian"]} 
+      />
+      <ProtectedRoute 
+        path="/student" 
+        component={WrappedStudentDashboard} 
+        allowedRoles={["student"]} 
+      />
+      
       {/* Admin routes */}
-      <ProtectedRoute path="/admin/librarians" component={ManageLibrarians} />
-      <ProtectedRoute path="/admin/reports" component={Reports} />
+      <ProtectedRoute 
+        path="/admin/librarians" 
+        component={ManageLibrarians} 
+        allowedRoles={["admin"]} 
+      />
+      <ProtectedRoute 
+        path="/admin/reports" 
+        component={Reports} 
+        allowedRoles={["admin"]} 
+      />
       
       {/* Librarian routes */}
-      <ProtectedRoute path="/librarian/books" component={ManageBooks} />
-      <ProtectedRoute path="/librarian/issue" component={IssueBooks} />
-      <ProtectedRoute path="/librarian/return" component={ReturnBooks} />
-      <ProtectedRoute path="/librarian/students" component={ManageStudents} />
+      <ProtectedRoute 
+        path="/librarian/books" 
+        component={ManageBooks} 
+        allowedRoles={["admin", "librarian"]} 
+      />
+      <ProtectedRoute 
+        path="/librarian/issue" 
+        component={IssueBooks} 
+        allowedRoles={["admin", "librarian"]} 
+      />
+      <ProtectedRoute 
+        path="/librarian/return" 
+        component={ReturnBooks} 
+        allowedRoles={["admin", "librarian"]} 
+      />
+      <ProtectedRoute 
+        path="/librarian/students" 
+        component={ManageStudents} 
+        allowedRoles={["admin", "librarian"]} 
+      />
       
       {/* Student routes */}
-      <ProtectedRoute path="/student/borrow" component={BorrowBooks} />
-      <ProtectedRoute path="/student/return" component={StudentReturn} />
-      <ProtectedRoute path="/student/status" component={ViewStatus} />
-      <ProtectedRoute path="/student/request" component={RequestBooks} />
+      <ProtectedRoute 
+        path="/student/borrow" 
+        component={BorrowBooks} 
+        allowedRoles={["student"]} 
+      />
+      <ProtectedRoute 
+        path="/student/return" 
+        component={StudentReturn} 
+        allowedRoles={["student"]} 
+      />
+      <ProtectedRoute 
+        path="/student/status" 
+        component={ViewStatus} 
+        allowedRoles={["student"]} 
+      />
+      <ProtectedRoute 
+        path="/student/request" 
+        component={RequestBooks} 
+        allowedRoles={["student"]} 
+      />
       
       {/* Common routes */}
       <ProtectedRoute path="/profile" component={Profile} />
