@@ -331,23 +331,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
           <div className="flex justify-around">
             {mobileNavItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <a className={cn(
+              <Link 
+                key={item.href} 
+                href={item.href}
+                className={cn(
                   "flex flex-col items-center p-3",
                   location === item.href 
                     ? "text-primary-600 dark:text-primary-400" 
                     : "text-slate-600 dark:text-slate-400"
-                )}>
-                  <div className="relative">
-                    {item.icon}
-                    {item.badge && item.badge > 0 && (
-                      <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 bg-red-500 text-[10px]">
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </div>
-                  <span className="text-xs mt-1">{item.label}</span>
-                </a>
+                )}
+              >
+                <div className="relative">
+                  {item.icon}
+                  {item.badge && item.badge > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 bg-red-500 text-[10px]">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs mt-1">{item.label}</span>
               </Link>
             ))}
           </div>
