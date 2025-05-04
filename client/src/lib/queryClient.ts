@@ -1,5 +1,5 @@
-
 import { QueryClient } from "@tanstack/react-query";
+import { mockApiHandlers } from "./mockData";
 
 // Mock data handlers
 const mockData = {
@@ -9,41 +9,33 @@ const mockData = {
   notifications: []
 };
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<any> {
-  // Simulate API latency
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Mock responses based on URL
-  if (url.includes('/api/books')) {
-    return { json: () => mockData.books };
-  }
-  if (url.includes('/api/users')) {
-    return { json: () => mockData.users };
-  }
-  if (url.includes('/api/borrowings')) {
-    return { json: () => mockData.borrowings };
-  }
-  if (url.includes('/api/notifications')) {
-    return { json: () => mockData.notifications };
-  }
-  
-  return { json: () => ({}) };
-}
-
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
-    },
-    mutations: {
-      retry: false,
-    },
-  },
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: false
+    }
+  }
 });
+
+export const apiRequest = async (method: string, endpoint: string, data?: any) => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // Use mock handlers
+  if (method === "GET" && mockApiHandlers[endpoint]) {
+    return {
+      ok: true,
+      json: async () => mockApiHandlers[endpoint]()
+    };
+  }
+
+  if (method === "POST" && mockApiHandlers[endpoint]) {
+    return {
+      ok: true,
+      json: async () => mockApiHandlers[endpoint](data)
+    };
+  }
+
+  throw new Error("API endpoint not found");
+};

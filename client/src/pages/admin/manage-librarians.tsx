@@ -41,7 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { User } from "@shared/schema";
+import { User } from "../../shared/schema";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Search, PlusCircle, AlertCircle } from "lucide-react";
 
