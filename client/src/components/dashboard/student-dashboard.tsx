@@ -198,9 +198,9 @@ const StudentDashboard = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Popular Books</h3>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/student/borrow">Browse All</Link>
-                </Button>
+                <Link href="/student/borrow" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                  Browse All
+                </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {popularBooks.map(book => (

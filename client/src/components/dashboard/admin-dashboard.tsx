@@ -110,30 +110,30 @@ const AdminDashboard = () => {
                   <h3 className="text-lg font-semibold">Quick Actions</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" asChild className="h-24 flex flex-col items-center justify-center gap-2">
-                    <Link href="/admin/librarians">
+                  <Link href="/admin/librarians" className="w-full">
+                    <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <Users className="h-5 w-5" />
                       <span>Manage Librarians</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild className="h-24 flex flex-col items-center justify-center gap-2">
-                    <Link href="/admin/reports">
+                    </div>
+                  </Link>
+                  <Link href="/admin/reports" className="w-full">
+                    <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <BarChart3 className="h-5 w-5" />
                       <span>View Reports</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center gap-2" asChild>
-                    <Link href="/admin/reports?tab=fines">
+                    </div>
+                  </Link>
+                  <Link href="/admin/reports?tab=fines" className="w-full">
+                    <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <AlertOctagon className="h-5 w-5" />
                       <span>Fine Management</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center gap-2" asChild>
-                    <Link href="/settings">
+                    </div>
+                  </Link>
+                  <Link href="/settings" className="w-full">
+                    <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <CheckCircle className="h-5 w-5" />
                       <span>Approve Requests</span>
-                    </Link>
-                  </Button>
+                    </div>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
@@ -171,7 +171,9 @@ const AdminDashboard = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Recent Activity</h3>
-                <Button variant="ghost" size="sm">View All</Button>
+                <Link href="/admin/activity" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                  View All
+                </Link>
               </div>
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-md">

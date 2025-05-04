@@ -158,16 +158,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div>
               <div className="mt-2 space-y-1">
                 {navItems.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <a className={cn(
+                  <Link 
+                    key={item.href} 
+                    href={item.href}
+                    className={cn(
                       "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                       location === item.href 
                         ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400" 
                         : "text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-gray-700"
-                    )}>
-                      {item.icon}
-                      {item.label}
-                    </a>
+                    )}
+                  >
+                    {item.icon}
+                    {item.label}
                   </Link>
                 ))}
               </div>
@@ -233,16 +235,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   
                   <nav className="space-y-6">
                     {navItems.map(item => (
-                      <Link key={item.href} href={item.href}>
-                        <a className={cn(
+                      <Link 
+                        key={item.href} 
+                        href={item.href}
+                        className={cn(
                           "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                           location === item.href 
                             ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400" 
                             : "text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-gray-700"
-                        )}>
-                          {item.icon}
-                          {item.label}
-                        </a>
+                        )}
+                      >
+                        {item.icon}
+                        {item.label}
                       </Link>
                     ))}
                     
