@@ -137,13 +137,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const mobileNavItems = getMobileNavItems();
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen flex bg-white text-slate-900 dark:bg-gray-900 dark:text-slate-100 transition-colors duration-300">
       {/* Sidebar for desktop */}
-      <aside className="hidden md:flex md:flex-col md:w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 shadow-sm">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex items-center space-x-3">
-            <LibraryLogo className="text-primary-600 dark:text-primary-400" size={28} />
-            <h1 className="text-xl font-bold">Smart Library</h1>
+      <aside className="hidden md:flex md:flex-col md:w-64 bg-primary-50 dark:bg-gray-800 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 shadow-sm">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center">
+          <Button variant="ghost" size="icon" className="mr-2">
+            <Menu className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center space-x-2">
+            <span className="bg-primary-500 dark:bg-primary-500 text-white font-bold px-2 py-1 rounded text-xs">LOGO</span>
+            <h1 className="text-md font-bold">Dashboard</h1>
           </div>
         </div>
         
@@ -151,17 +154,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <nav className="px-3 space-y-6">
             {/* Main Navigation */}
             <div>
-              <p className="px-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Main
-              </p>
               <div className="mt-2 space-y-1">
                 {navItems.map((item) => (
                   <Link key={item.href} href={item.href}>
                     <a className={cn(
                       "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                       location === item.href 
-                        ? "bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400" 
-                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400" 
+                        : "text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-gray-700"
                     )}>
                       {item.icon}
                       {item.label}
@@ -179,14 +179,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <div className="mt-2 space-y-1">
                 <a 
                   href="#" 
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-gray-700"
                 >
                   <CircleHelp className="h-4 w-4 mr-3" />
                   Help & Documentation
                 </a>
                 <button 
                   onClick={handleLogout}
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 w-full text-left"
+                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-gray-700 w-full text-left"
                 >
                   <LogOut className="h-4 w-4 mr-3" />
                   Logout
@@ -200,7 +200,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex items-center">
             <Avatar>
               <AvatarImage src="" />
-              <AvatarFallback className="bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
+              <AvatarFallback className="bg-primary-500 dark:bg-primary-800 text-white">
                 {user?.name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -214,7 +214,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       
       <div className="flex-1 overflow-auto">
         {/* Top Navigation Bar */}
-        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-10">
+        <header className="bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-10">
           <div className="flex items-center justify-between h-16 px-4">
             <div className="flex items-center md:hidden">
               <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
@@ -223,10 +223,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-72">
-                  <div className="flex items-center space-x-3 mb-8">
-                    <LibraryLogo className="text-primary-600 dark:text-primary-400" size={28} />
-                    <h1 className="text-xl font-bold">Smart Library</h1>
+                <SheetContent side="left" className="w-72 bg-primary-50 dark:bg-gray-800">
+                  <div className="flex items-center space-x-2 mb-8">
+                    <span className="bg-primary-500 dark:bg-primary-500 text-white font-bold px-2 py-1 rounded text-xs">LOGO</span>
+                    <h1 className="text-md font-bold">Dashboard</h1>
                   </div>
                   
                   <nav className="space-y-6">
@@ -235,8 +235,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         <a className={cn(
                           "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                           location === item.href 
-                            ? "bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400" 
-                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                            ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400" 
+                            : "text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-gray-700"
                         )}>
                           {item.icon}
                           {item.label}
@@ -247,7 +247,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                       <button 
                         onClick={handleLogout}
-                        className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 w-full text-left"
+                        className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-gray-700 w-full text-left"
                       >
                         <LogOut className="h-4 w-4 mr-3" />
                         Logout
@@ -256,16 +256,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   </nav>
                 </SheetContent>
               </Sheet>
-              <h1 className="ml-3 text-lg font-bold text-primary-600 dark:text-primary-400">Smart Library</h1>
+              <div className="flex items-center space-x-2 ml-3">
+                <span className="bg-primary-500 dark:bg-primary-500 text-white font-bold px-2 py-1 rounded text-xs">LOGO</span>
+                <h1 className="text-md font-bold">Dashboard</h1>
+              </div>
             </div>
             
-            <div className="flex-1 max-w-3xl mx-auto px-4 md:px-8">
+            <div className="flex-1 max-w-md mx-auto px-4 md:px-8">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input 
                   type="text" 
-                  placeholder="Search for books, authors..." 
-                  className="block w-full pl-10 pr-3 py-2 rounded-md bg-slate-100 dark:bg-slate-700 border-transparent focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                  placeholder="Search..." 
+                  className="block w-full pl-10 pr-3 py-2 rounded-full bg-slate-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                 />
               </div>
             </div>
@@ -275,6 +278,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 variant="ghost" 
                 size="icon"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="text-gray-500 dark:text-gray-400"
               >
                 {theme === "dark" ? (
                   <Sun className="h-5 w-5" />
@@ -283,10 +287,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 )}
               </Button>
               
-              <Button variant="ghost" size="icon" className="relative">
+              <Button variant="ghost" size="icon" className="relative text-gray-500 dark:text-gray-400">
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500">
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-primary-500 dark:bg-primary-500">
                     {unreadCount}
                   </Badge>
                 )}
@@ -295,7 +299,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <div className="hidden md:block">
                 <Avatar>
                   <AvatarImage src="" />
-                  <AvatarFallback className="bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
+                  <AvatarFallback className="bg-primary-500 dark:bg-primary-800 text-white">
                     {user?.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -305,7 +309,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
         
         {/* Main Content */}
-        <main className="px-4 py-6 sm:px-6 lg:px-8 pb-16 md:pb-6">
+        <main className="px-4 py-6 sm:px-6 lg:px-8 pb-16 md:pb-6 bg-white dark:bg-gray-900">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
