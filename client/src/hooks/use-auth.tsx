@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -32,7 +33,7 @@ type AuthContextType = {
   user: User | null;
   loginMutation: ReturnType<typeof useLoginMutation>;
   registerMutation: ReturnType<typeof useRegisterMutation>;
-  logout: () => void;
+  logoutMutation: ReturnType<typeof useLogoutMutation>;
   isLoading: boolean;
 };
 
@@ -67,6 +68,13 @@ const registerApi = async (data: RegisterData): Promise<User> => {
   };
 };
 
+// Mock logout API function
+const logoutApi = async () => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return true;
+};
+
 // Custom hooks for mutations
 const useLoginMutation = (setUser: (user: User | null) => void) => {
   return useMutation({
@@ -88,11 +96,27 @@ const useRegisterMutation = (setUser: (user: User | null) => void) => {
   });
 };
 
+const useLogoutMutation = (setUser: (user: User | null) => void) => {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: logoutApi,
+    onSuccess: () => {
+      localStorage.removeItem('user');
+      setUser(null);
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+    }
+  });
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const loginMutation = useLoginMutation(setUser);
   const registerMutation = useRegisterMutation(setUser);
+  const logoutMutation = useLogoutMutation(setUser);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -102,13 +126,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loginMutation, registerMutation, logout, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loginMutation, 
+      registerMutation, 
+      logoutMutation,
+      isLoading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

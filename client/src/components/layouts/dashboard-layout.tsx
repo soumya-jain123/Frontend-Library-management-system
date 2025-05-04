@@ -58,14 +58,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // Handle logout
   const handleLogout = () => {
-    logoutMutation.mutate(undefined, {
-      onSuccess: () => {
-        toast({
-          title: "Logged out successfully",
-          description: "You have been logged out of your account",
-        });
-      },
-    });
+    logoutMutation.mutate();
   };
 
   // Close mobile sidebar when navigating
