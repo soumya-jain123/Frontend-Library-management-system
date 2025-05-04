@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
 
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -29,16 +30,69 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
-  login: (username: string, password: string, role: string) => Promise<void>;
+  loginMutation: ReturnType<typeof useLoginMutation>;
+  registerMutation: ReturnType<typeof useRegisterMutation>;
   logout: () => void;
   isLoading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Mock API functions
+const loginApi = async (data: LoginData): Promise<User> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  return {
+    id: 1,
+    username: data.username,
+    role: data.role,
+    name: "Test User",
+    email: "test@example.com",
+    active: true
+  };
+};
+
+const registerApi = async (data: RegisterData): Promise<User> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  return {
+    id: 1,
+    username: data.username,
+    role: data.role,
+    name: data.name,
+    email: data.email,
+    active: true
+  };
+};
+
+// Custom hooks for mutations
+const useLoginMutation = (setUser: (user: User | null) => void) => {
+  return useMutation({
+    mutationFn: loginApi,
+    onSuccess: (user) => {
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+    }
+  });
+};
+
+const useRegisterMutation = (setUser: (user: User | null) => void) => {
+  return useMutation({
+    mutationFn: registerApi,
+    onSuccess: (user) => {
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+    }
+  });
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const loginMutation = useLoginMutation(setUser);
+  const registerMutation = useRegisterMutation(setUser);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -48,28 +102,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (username: string, password: string, role: string) => {
-    // Mock login - in real app this would be an API call
-    const mockUser = {
-      id: 1,
-      username,
-      role,
-      name: "Test User",
-      email: "test@example.com",
-      active: true
-    };
-
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    setUser(mockUser);
-  };
-
   const logout = () => {
     localStorage.removeItem('user');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, loginMutation, registerMutation, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

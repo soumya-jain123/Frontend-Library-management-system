@@ -21,6 +21,7 @@ import RequestBooks from "@/pages/student/request-books";
 import Profile from "@/pages/profile";
 import Settings from "@/pages/settings";
 import { ThemeProvider } from "./hooks/use-theme";
+import { type PropsWithChildren } from "react";
 
 function Router() {
   return (
@@ -57,18 +58,26 @@ function Router() {
   );
 }
 
-function App() {
+const Providers: React.FC<PropsWithChildren> = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+      <ThemeProvider defaultTheme="system" storageKey="library-theme">
         <AuthProvider>
           <TooltipProvider>
-            <Toaster />
-            <Router />
+            {children}
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
+  );
+};
+
+function App() {
+  return (
+    <Providers>
+      <Toaster />
+      <Router />
+    </Providers>
   );
 }
 
