@@ -111,30 +111,30 @@ const LibrarianDashboard = () => {
                   <h3 className="text-lg font-semibold">Quick Actions</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" asChild className="h-24 flex flex-col items-center justify-center gap-2">
-                    <Link href="/librarian/books">
+                  <Link href="/librarian/books" className="w-full">
+                    <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <BookOpen className="h-5 w-5" />
                       <span>Manage Books</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild className="h-24 flex flex-col items-center justify-center gap-2">
-                    <Link href="/librarian/issue">
+                    </div>
+                  </Link>
+                  <Link href="/librarian/issue" className="w-full">
+                    <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <BookPlus className="h-5 w-5" />
                       <span>Issue Books</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center gap-2" asChild>
-                    <Link href="/librarian/return">
+                    </div>
+                  </Link>
+                  <Link href="/librarian/return" className="w-full">
+                    <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <RotateCcw className="h-5 w-5" />
                       <span>Return Books</span>
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center gap-2" asChild>
-                    <Link href="/librarian/students">
+                    </div>
+                  </Link>
+                  <Link href="/librarian/students" className="w-full">
+                    <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <UserCheck className="h-5 w-5" />
                       <span>Manage Students</span>
-                    </Link>
-                  </Button>
+                    </div>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
@@ -143,9 +143,9 @@ const LibrarianDashboard = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Overdue Books</h3>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/librarian/return">View All</Link>
-                  </Button>
+                  <Link href="/librarian/return" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                    View All
+                  </Link>
                 </div>
                 <div className="space-y-4">
                   {overdueBorrowings?.slice(0, 3).map((borrowing) => (
@@ -210,9 +210,9 @@ const LibrarianDashboard = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Currently Borrowed Books</h3>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/librarian/return">Manage Returns</Link>
-                </Button>
+                <Link href="/librarian/return" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                  Manage Returns
+                </Link>
               </div>
               <BookTable 
                 books={activeBorrowings?.map(borrowing => ({
