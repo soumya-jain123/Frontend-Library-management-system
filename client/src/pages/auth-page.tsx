@@ -196,7 +196,7 @@ const AuthPage = () => {
                   <TabsContent value="login" className="space-y-4">
                     <Form {...loginForm}>
                       <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                        <FormField
+                        {/* <FormField
                           control={loginForm.control}
                           name="role"
                           render={({ field }) => (
@@ -217,14 +217,14 @@ const AuthPage = () => {
                               <FormMessage />
                             </FormItem>
                           )}
-                        />
+                        /> */}
 
                         <FormField
                           control={loginForm.control}
                           name="username"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Username</FormLabel>
+                              <FormLabel>Email-ID</FormLabel>
                               <FormControl>
                                 <div className="relative">
                                   <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
