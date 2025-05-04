@@ -46,13 +46,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Fetch notifications to show count
-  const { data: notifications } = useQuery({
+  const notificationsQuery = useQuery({
     queryKey: ["/api/notifications"],
     enabled: !!user
   });
 
-  // Filter unread notifications
-  const unreadCount = notifications?.filter(n => !n.read).length || 0;
+  // Count unread notifications
+  const unreadCount = React.useMemo(() => {
+    if (!notificationsQuery.data || !Array.isArray(notificationsQuery.data)) {
+      return 0;
+    }
+    return notificationsQuery.data.filter((n: any) => !n.read).length;
+  }, [notificationsQuery.data]);
 
   // Handle logout
   const handleLogout = () => {
