@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -52,12 +52,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   });
 
   // Count unread notifications
-  const unreadCount = React.useMemo(() => {
-    if (!notificationsQuery.data || !Array.isArray(notificationsQuery.data)) {
-      return 0;
-    }
-    return notificationsQuery.data.filter((n: any) => !n.read).length;
-  }, [notificationsQuery.data]);
+  const unreadCount = (notificationsQuery.data && Array.isArray(notificationsQuery.data)) 
+    ? notificationsQuery.data.filter((n: any) => !n.read).length 
+    : 0;
 
   // Handle logout
   const handleLogout = () => {
