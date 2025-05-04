@@ -1,4 +1,22 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { z } from "zod";
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+  role: z.enum(["student", "librarian", "admin"])
+});
+
+export const registerSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["student", "librarian", "admin"]),
+  name: z.string().min(1, "Full name is required"),
+  email: z.string().email("Valid email is required")
+});
+
+export type LoginData = z.infer<typeof loginSchema>;
+export type RegisterData = z.infer<typeof registerSchema>;
 
 type User = {
   id: number;
