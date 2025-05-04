@@ -23,6 +23,12 @@ import Settings from "@/pages/settings";
 import { ThemeProvider } from "./hooks/use-theme";
 import { type PropsWithChildren } from "react";
 
+import DashboardLayout from "@/components/layouts/dashboard-layout";
+import AdminDashboard from "@/components/dashboard/admin-dashboard";
+import LibrarianDashboard from "@/components/dashboard/librarian-dashboard";
+
+// Then inside your <Switch> in the Router component:
+
 function Router() {
   return (
     <Switch>
@@ -32,6 +38,10 @@ function Router() {
       {/* Protected routes */}
       <ProtectedRoute path="/" component={HomePage} />
       
+      {/* <ProtectedRoute path="/admin" component={AdminDashboard} />
+      <ProtectedRoute path="/librarian" component={LibrarianDashboard} />
+      <ProtectedRoute path="/user" component={DashboardLayout} /> */}
+
       {/* Admin routes */}
       <ProtectedRoute path="/admin/librarians" component={ManageLibrarians} />
       <ProtectedRoute path="/admin/reports" component={Reports} />

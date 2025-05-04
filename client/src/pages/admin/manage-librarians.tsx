@@ -45,6 +45,8 @@ import { User } from "@shared/schema";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Search, PlusCircle, AlertCircle } from "lucide-react";
 
+const API_BASE_URL = "http://localhost:8080";
+
 // Form schema for creating a librarian
 const createLibrarianSchema = z.object({
   username: z

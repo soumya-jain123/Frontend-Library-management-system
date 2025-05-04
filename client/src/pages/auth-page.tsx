@@ -26,6 +26,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LibraryLogo from "@/assets/svg/library-logo";
 import { BookOpen, Sun, Moon, User, Key, UserPlus, Mail } from "lucide-react";
 
+const API_BASE_URL = "http://localhost:8080";
+
 const AuthPage = () => {
   const { user, loginMutation, registerMutation } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -53,13 +55,87 @@ const AuthPage = () => {
   });
 
   // Handle form submissions
-  const handleLogin = (data: LoginData) => {
-    loginMutation.mutate(data);
+  // const handleLogin = (data: LoginData) => {
+  //   loginMutation.mutate(data);
+  // };
+
+  const handleLogin = async (data: LoginData) => {
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST", // Changed to POST
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.username,
+          password: data.password,
+        }),
+      });
+  
+      const result = await response.json();
+  
+      if (result.statusCode == 200) {
+        // Save token or handle authentication success (e.g., save token to localStorage)
+        localStorage.setItem("authToken", result.token); // Store the auth token
+        localStorage.setItem("refreshToken", result.refreshToken); // Store the refresh token
+        localStorage.setItem("userRole", result.role); // Store the user role
+        localStorage.setItem("enabled", JSON.stringify(result.enabled));
+        // // TODO: WTF is this
+        loginMutation.mutate(data);
+
+        // Redirect based on the role returned from backend
+        const role = result.role;
+        // if (role === "admin") {
+        //   window.location.href = "/admin";
+        // } else if (role === "librarian") {
+        //   window.location.href = "/librarian";
+        // } else {
+        //   window.location.href = "/student";
+        // }
+
+      } else {
+        alert(result.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("An error occurred while connecting to the server.");
+    }
   };
 
-  const handleRegister = (data: RegisterData) => {
-    registerMutation.mutate(data);
+  // const handleRegister = (data: RegisterData) => {
+  //   registerMutation.mutate(data);
+  // };
+
+  const handleRegister = async (data: RegisterData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST", // POST request for registration
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          displayName: data.username,
+          password: data.password,
+          role: data.role,
+        }),
+      });
+  
+      const result = await response.json();
+  
+      if (result.statusCode == 200) {
+        alert("Registration successful! You can now log in.");
+        setActiveTab("login");
+      } else {
+        alert(result.message || "Registration failed");
+      } 
+    } catch (error) {
+      console.error("Registration error:", error);
+      alert("An error occurred while connecting to the server.");
+    }
   };
+  
 
   // If user is already logged in, redirect to home
   if (user) {
