@@ -18,7 +18,7 @@ externalPort = 3000
 exposeLocalhost = true
 
 [workflows]
-runButton = "Run"
+runButton = "Run Frontend"
 
 [[workflows.workflow]]
 name = "Project"
@@ -40,6 +40,15 @@ waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Run"
+author = 42254626
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Run Frontend"
 author = 42254626
 mode = "sequential"
 
