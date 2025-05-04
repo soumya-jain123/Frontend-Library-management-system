@@ -68,8 +68,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // Nav items based on user role
   const getNavItems = () => {
+    // Determine the dashboard URL based on user role
+    const dashboardUrl = user?.role === "admin" 
+      ? "/admin" 
+      : user?.role === "librarian" 
+        ? "/librarian" 
+        : "/student";
+    
     const commonItems = [
-      { label: "Dashboard", icon: <Home className="h-4 w-4 mr-3" />, href: "/" },
+      { label: "Dashboard", icon: <Home className="h-4 w-4 mr-3" />, href: dashboardUrl },
       { label: "Profile", icon: <User className="h-4 w-4 mr-3" />, href: "/profile" },
       { label: "Settings", icon: <Settings className="h-4 w-4 mr-3" />, href: "/settings" },
     ];
@@ -101,9 +108,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // Get mobile navigation items
   const getMobileNavItems = () => {
+    // Determine the dashboard URL based on user role
+    const dashboardUrl = user?.role === "admin" 
+      ? "/admin" 
+      : user?.role === "librarian" 
+        ? "/librarian" 
+        : "/student";
+        
     if (user?.role === "admin") {
       return [
-        { label: "Home", icon: <Home className="h-5 w-5" />, href: "/" },
+        { label: "Home", icon: <Home className="h-5 w-5" />, href: dashboardUrl },
         { label: "Librarians", icon: <Users className="h-5 w-5" />, href: "/admin/librarians" },
         { label: "Reports", icon: <BarChart3 className="h-5 w-5" />, href: "/admin/reports" },
         { label: "Notifications", icon: <Bell className="h-5 w-5" />, href: "#", badge: unreadCount },
@@ -111,7 +125,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       ];
     } else if (user?.role === "librarian") {
       return [
-        { label: "Home", icon: <Home className="h-5 w-5" />, href: "/" },
+        { label: "Home", icon: <Home className="h-5 w-5" />, href: dashboardUrl },
         { label: "Books", icon: <BookOpen className="h-5 w-5" />, href: "/librarian/books" },
         { label: "Issue", icon: <BookPlus className="h-5 w-5" />, href: "/librarian/issue" },
         { label: "Return", icon: <RotateCcw className="h-5 w-5" />, href: "/librarian/return" },
@@ -119,7 +133,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       ];
     } else {
       return [
-        { label: "Home", icon: <Home className="h-5 w-5" />, href: "/" },
+        { label: "Home", icon: <Home className="h-5 w-5" />, href: dashboardUrl },
         { label: "Borrow", icon: <BookOpen className="h-5 w-5" />, href: "/student/borrow" },
         { label: "Return", icon: <RotateCcw className="h-5 w-5" />, href: "/student/return" },
         { label: "Status", icon: <Clock className="h-5 w-5" />, href: "/student/status" },

@@ -233,53 +233,52 @@ const ReturnBooks = () => {
           </p>
         </div>
 
-        <div className="flex justify-between items-center">
-          <div className="flex-1">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex-1">
               <TabsList>
                 <TabsTrigger value="borrowed">All Borrowed</TabsTrigger>
                 <TabsTrigger value="overdue">Overdue</TabsTrigger>
               </TabsList>
-            </Tabs>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="relative max-w-xs">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                className="pl-10"
-                placeholder="Search borrowings..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
             </div>
             
-            <Button variant="outline" onClick={() => setIsQrScannerOpen(true)}>
-              <QrCode className="h-4 w-4 mr-2" />
-              Scan QR
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="relative max-w-xs">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  className="pl-10"
+                  placeholder="Search borrowings..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <Button variant="outline" onClick={() => setIsQrScannerOpen(true)}>
+                <QrCode className="h-4 w-4 mr-2" />
+                Scan QR
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {activeTab === "borrowed" ? "Currently Borrowed Books" : "Overdue Books"}
-              </CardTitle>
-              <CardDescription>
-                {activeTab === "borrowed"
-                  ? "All books currently checked out by students"
-                  : "Books that are past their due date and may incur fines"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsContent value="borrowed" className="mt-0">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {activeTab === "borrowed" ? "Currently Borrowed Books" : "Overdue Books"}
+                </CardTitle>
+                <CardDescription>
+                  {activeTab === "borrowed"
+                    ? "All books currently checked out by students"
+                    : "Books that are past their due date and may incur fines"}
+                </CardDescription>
+              </CardHeader>
+              
+              <TabsContent value="borrowed">
+                <CardContent>
                   <BookTable
                     books={formatBorrowingsForTable(filteredBorrowings)}
                     type="borrowed"
@@ -290,9 +289,16 @@ const ReturnBooks = () => {
                     }}
                     isLoading={isLoading}
                   />
-                </TabsContent>
-                
-                <TabsContent value="overdue" className="mt-0">
+                </CardContent>
+                <CardFooter className="bg-slate-50 dark:bg-slate-800/50 border-t">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">
+                    Showing {filteredBorrowings?.length || 0} of {activeBorrowings?.length || 0} borrowed books
+                  </div>
+                </CardFooter>
+              </TabsContent>
+              
+              <TabsContent value="overdue">
+                <CardContent>
                   <BookTable
                     books={formatBorrowingsForTable(filteredBorrowings)}
                     type="overdue"
@@ -303,19 +309,16 @@ const ReturnBooks = () => {
                     }}
                     isLoading={isLoading}
                   />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-            <CardFooter className="bg-slate-50 dark:bg-slate-800/50 border-t">
-              <div className="text-sm text-slate-500 dark:text-slate-400">
-                {activeTab === "borrowed" 
-                  ? `Showing ${filteredBorrowings?.length || 0} of ${activeBorrowings?.length || 0} borrowed books`
-                  : `Showing ${filteredBorrowings?.length || 0} of ${overdueBorrowings?.length || 0} overdue books`
-                }
-              </div>
-            </CardFooter>
-          </Card>
-        </motion.div>
+                </CardContent>
+                <CardFooter className="bg-slate-50 dark:bg-slate-800/50 border-t">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">
+                    Showing {filteredBorrowings?.length || 0} of {overdueBorrowings?.length || 0} overdue books
+                  </div>
+                </CardFooter>
+              </TabsContent>
+            </Card>
+          </motion.div>
+        </Tabs>
 
         {/* Return Dialog */}
         <Dialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>

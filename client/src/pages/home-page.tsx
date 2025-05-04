@@ -13,22 +13,15 @@ const HomePage = () => {
   const [location, setLocation] = useLocation();
   
   useEffect(() => {
-    // Redirect to role-specific dashboard URL if user is at root page
+    // Redirect users based on their role when they visit "/"
     if (user && location === "/") {
-      switch (user.role) {
-        case "admin":
-          setLocation("/admin");
-          break;
-        case "librarian":
-          setLocation("/librarian");
-          break;
-        case "student":
-          setLocation("/student");
-          break;
-        default:
-          // Stay on homepage if role is not recognized
-          break;
-      }
+      const roleSpecificUrl = user.role === "admin" 
+        ? "/admin" 
+        : user.role === "librarian" 
+          ? "/librarian" 
+          : "/student";
+          
+      setLocation(roleSpecificUrl);
     }
   }, [user, location, setLocation]);
 

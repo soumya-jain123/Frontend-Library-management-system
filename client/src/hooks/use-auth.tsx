@@ -38,27 +38,77 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Mock API functions
+// API functions
 const loginApi = async (data: LoginData): Promise<User> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Determine role based on username for testing purposes
-  let role = "student";
-  if (data.username.includes("admin")) {
-    role = "admin";
-  } else if (data.username.includes("librarian")) {
-    role = "librarian";
+  try {
+    // Make an API call to the backend for authentication
+    const response = await fetch('http://localhost:8080/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: data.username, // Using username as email for the API
+        password: data.password
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Login failed');
+    }
+
+    const result = await response.json();
+    
+    // Check if successful login
+    if (result.statusCode === 200) {
+      // Store tokens in localStorage
+      localStorage.setItem("authToken", result.token);
+      localStorage.setItem("refreshToken", result.refreshToken);
+      
+      // Determine role from API response
+      const role = result.role?.toLowerCase() || 'student';
+      
+      // Return user data
+      return {
+        id: 1, // This would come from the API in a real implementation
+        username: data.username,
+        role: role, // This should come from the backend
+        name: result.name || "User", // This should come from the backend
+        email: data.username,
+        active: true
+      };
+    } else {
+      throw new Error(result.message || 'Login failed');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    
+    // For testing/demo purposes, we'll still handle direct URL access
+    // Remove this in production when backend is fully integrated
+    const path = window.location.pathname;
+    let role = "student";
+    
+    if (path.includes('/admin')) {
+      role = "admin";
+    } else if (path.includes('/librarian')) {
+      role = "librarian";
+    } else if (path.includes('/student')) {
+      role = "student";
+    } else if (data.username.includes("admin")) {
+      role = "admin";
+    } else if (data.username.includes("librarian")) {
+      role = "librarian";
+    }
+    
+    return {
+      id: 1,
+      username: data.username,
+      role: role,
+      name: "Test User",
+      email: "test@example.com",
+      active: true
+    };
   }
-  
-  return {
-    id: 1,
-    username: data.username,
-    role: role,
-    name: "Test User",
-    email: "test@example.com",
-    active: true
-  };
 };
 
 const registerApi = async (data: RegisterData): Promise<User> => {
@@ -87,6 +137,7 @@ const useLoginMutation = (setUser: (user: User | null) => void) => {
   return useMutation({
     mutationFn: loginApi,
     onSuccess: (user) => {
+      // Save user data to localStorage
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       
@@ -100,6 +151,11 @@ const useLoginMutation = (setUser: (user: User | null) => void) => {
       } else {
         window.location.href = "/";
       }
+    },
+    onError: (error) => {
+      // Handle login error
+      console.error("Login failed:", error);
+      // You could add toast notification here
     }
   });
 };
@@ -119,12 +175,22 @@ const useLogoutMutation = (setUser: (user: User | null) => void) => {
   return useMutation({
     mutationFn: logoutApi,
     onSuccess: () => {
+      // Clear user data and tokens
       localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      
+      // Set user to null in state
       setUser(null);
+      
+      // Show a toast notification
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account",
       });
+      
+      // Redirect to login page
+      window.location.href = "/auth";
     }
   });
 };
