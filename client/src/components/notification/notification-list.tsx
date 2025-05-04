@@ -122,15 +122,16 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications }) =>
           <TabsTrigger value="due_date">Due Date</TabsTrigger>
         </TabsList>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            <TabsContent value={activeTab} className="space-y-4">
+        <TabsContent value={activeTab} className="space-y-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
+            >
               {filteredNotifications.length === 0 ? (
                 <Card>
                   <CardContent className="pt-6 pb-6 flex flex-col items-center justify-center text-center">
@@ -196,9 +197,9 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications }) =>
                   </motion.div>
                 ))
               )}
-            </TabsContent>
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
+        </TabsContent>
       </Tabs>
     </div>
   );
