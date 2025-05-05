@@ -60,6 +60,7 @@ const ManageBooks = () => {
         },
       });
 
+
       const data = await response.json();
       return data.content; // Assuming the response contains the list of books
     },
@@ -181,8 +182,38 @@ const ManageBooks = () => {
   //   },
   // });
 
+  // const deleteBookMutation = useMutation({
+  //   mutationFn: async (id: number) => {
+  //     await apiRequest("DELETE", `/api/books/${id}`);
+  //   },
+  //   onSuccess: () => {
+  //     toast({
+  //       title: "Book deleted",
+  //       description: "The book has been deleted successfully.",
+  //     });
+  //     setBookToDelete(null);
+  //     queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+  //   },
+  //   onError: (error: Error) => {
+  //     toast({
+  //       title: "Failed to delete book",
+  //       description: error.message,
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
+
   const deleteBookMutation = useMutation({
     mutationFn: async (id: number) => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("User not authenticated");
+      console.log("Deleting book with ID:", id);
+      await fetch(`http://127.0.0.1:8080/librarian/delete-book/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("User not authenticated");
       console.log("Deleting book with ID:", id);
@@ -199,6 +230,7 @@ const ManageBooks = () => {
         description: "The book has been deleted successfully.",
       });
       setBookToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // Use the key you're using for books query
       queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // Use the key you're using for books query
     },
     onError: (error: Error) => {
