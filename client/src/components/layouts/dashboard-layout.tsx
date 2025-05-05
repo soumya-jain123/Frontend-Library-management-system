@@ -83,7 +83,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         { label: "Manage Books", icon: <BookOpen className="h-4 w-4 mr-3" />, href: "/librarian/books" },
         { label: "Issue Books", icon: <BookPlus className="h-4 w-4 mr-3" />, href: "/librarian/issue" },
         { label: "Return Books", icon: <RotateCcw className="h-4 w-4 mr-3" />, href: "/librarian/return" },
-        { label: "Manage Students", icon: <UserCheck className="h-4 w-4 mr-3" />, href: "/librarian/students" },
+        { label: "Manage Users", icon: <UserCheck className="h-4 w-4 mr-3" />, href: "/librarian/manage-users" },
       ];
     } else {
       return [

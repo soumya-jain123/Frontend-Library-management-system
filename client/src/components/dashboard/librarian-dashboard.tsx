@@ -97,9 +97,8 @@ const LibrarianDashboard = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="overview">Quick Actions</TabsTrigger>
-          <TabsTrigger value="borrowed">Borrowed Books</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
         
@@ -129,10 +128,10 @@ const LibrarianDashboard = () => {
                       <span>Return Books</span>
                     </div>
                   </Link>
-                  <Link href="/librarian/students" className="w-full">
+                  <Link href="/librarian/manage-users" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <UserCheck className="h-5 w-5" />
-                      <span>Manage Students</span>
+                      <span>Manage Users</span>
                     </div>
                   </Link>
                 </div>
@@ -201,30 +200,6 @@ const LibrarianDashboard = () => {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="borrowed">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Currently Borrowed Books</h3>
-                <Link href="/librarian/return" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
-                  Manage Returns
-                </Link>
-              </div>
-              <BookTable 
-                books={activeBorrowings?.map(borrowing => ({
-                  id: borrowing.id,
-                  title: borrowing.book?.title,
-                  author: borrowing.book?.author,
-                  borrower: borrowing.user?.name,
-                  dueDate: new Date(borrowing.dueDate),
-                  isOverdue: new Date(borrowing.dueDate) < new Date()
-                })) || []} 
-                type="borrowed" 
-              />
             </CardContent>
           </Card>
         </TabsContent>

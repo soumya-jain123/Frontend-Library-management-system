@@ -160,64 +160,8 @@ const ManageBooks = () => {
           </p>
         </div>
 
-        <div className="flex justify-between items-center">
-          <div>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="all">All Books</TabsTrigger>
-                <TabsTrigger value="available">Available</TabsTrigger>
-                <TabsTrigger value="borrowed">Borrowed</TabsTrigger>
-              </TabsList>
-            
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="w-full mt-4"
-              >
-                <TabsContent value="all" className="mt-0">
-                  <BookTable
-                    books={displayedBooks.map((book) => ({
-                      ...book,
-                    }))}
-                    type="all"
-                    onEdit={(book) => setBookToEdit(book as Book)}
-                    onDelete={(id) => setBookToDelete(id)}
-                    isLoading={isLoading || isSearching}
-                  />
-                </TabsContent>
-
-                <TabsContent value="available" className="mt-0">
-                  <BookTable
-                    books={displayedBooks
-                      .filter((book) => book.available > 0)
-                      .map((book) => ({
-                        ...book,
-                      }))}
-                    type="all"
-                    onEdit={(book) => setBookToEdit(book as Book)}
-                    onDelete={(id) => setBookToDelete(id)}
-                    isLoading={isLoading || isSearching}
-                  />
-                </TabsContent>
-
-                <TabsContent value="borrowed" className="mt-0">
-                  <BookTable
-                    books={displayedBooks
-                      .filter((book) => book.available < book.quantity)
-                      .map((book) => ({
-                        ...book,
-                      }))}
-                    type="all"
-                    onEdit={(book) => setBookToEdit(book as Book)}
-                    onDelete={(id) => setBookToDelete(id)}
-                    isLoading={isLoading || isSearching}
-                  />
-                </TabsContent>
-              </motion.div>
-            </Tabs>
-          </div>
-
+        {/* Add Book Button at the top */}
+        <div className="flex justify-end mb-4">
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -239,6 +183,75 @@ const ManageBooks = () => {
               />
             </DialogContent>
           </Dialog>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search books..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 border rounded-md bg-background text-foreground"
+          />
+        </div>
+
+        {/* Tabs and Book Table */}
+        <div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="all">All Books</TabsTrigger>
+              <TabsTrigger value="available">Check-Availability</TabsTrigger>
+              {/* <TabsTrigger value="borrowed">Borrowed</TabsTrigger> */}
+            </TabsList>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full mt-4"
+            >
+              <TabsContent value="all" className="mt-0">
+                <BookTable
+                  books={displayedBooks.map((book) => ({
+                    ...book,
+                  }))}
+                  type="all"
+                  onEdit={(book) => setBookToEdit(book as Book)}
+                  onDelete={(id) => setBookToDelete(id)}
+                  isLoading={isLoading || isSearching}
+                />
+              </TabsContent>
+
+              <TabsContent value="available" className="mt-0">
+                <BookTable
+                  books={displayedBooks
+                    .filter((book) => book.available > 0)
+                    .map((book) => ({
+                      ...book,
+                    }))}
+                  type="all"
+                  onEdit={(book) => setBookToEdit(book as Book)}
+                  onDelete={(id) => setBookToDelete(id)}
+                  isLoading={isLoading || isSearching}
+                />
+              </TabsContent>
+
+              {/* <TabsContent value="borrowed" className="mt-0">
+                <BookTable
+                  books={displayedBooks
+                    .filter((book) => book.available < book.quantity)
+                    .map((book) => ({
+                      ...book,
+                    }))}
+                  type="all"
+                  onEdit={(book) => setBookToEdit(book as Book)}
+                  onDelete={(id) => setBookToDelete(id)}
+                  isLoading={isLoading || isSearching}
+                />
+              </TabsContent> */}
+            </motion.div>
+          </Tabs>
         </div>
 
         {/* Edit Book Dialog */}
