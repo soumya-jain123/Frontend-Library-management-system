@@ -131,25 +131,25 @@ const UserDashboard = () => {
                   <h3 className="text-lg font-semibold">Quick Actions</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Link href="/User/borrow" className="w-full">
+                  <Link href="/student/borrow" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <BookOpen className="h-5 w-5" />
                       <span>Borrow Books</span>
                     </div>
                   </Link>
-                  <Link href="/User/return" className="w-full">
+                  <Link href="/student/return" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <RotateCcw className="h-5 w-5" />
                       <span>Return Books</span>
                     </div>
                   </Link>
-                  <Link href="/User/status" className="w-full">
+                  <Link href="/student/status" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <BookOpenCheck className="h-5 w-5" />
-                      <span>Check Status</span>
+                      <span>Borrowing & Renewal</span>
                     </div>
                   </Link>
-                  <Link href="/User/request" className="w-full">
+                  <Link href="/student/request" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <PlusCircle className="h-5 w-5" />
                       <span>Request Books</span>
