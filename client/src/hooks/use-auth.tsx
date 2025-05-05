@@ -64,7 +64,7 @@ const loginApi = async (data: LoginData): Promise<User> => {
   return {
     id: result.user?.id || 1,
     username: result.user?.username || data.username,
-    role: result.user?.role?.toLowerCase() || "student",
+    role: result.role?.toLowerCase() == "user" ? "student" : result.role?.toLowerCase(),
     name: result.user?.displayName || "User",
     email: result.user?.email || data.username,
     active: result.user?.enabled ?? true,
