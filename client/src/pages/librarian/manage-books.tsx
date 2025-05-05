@@ -84,20 +84,48 @@ const ManageBooks = () => {
   // Create book mutation
   const createBookMutation = useMutation({
     mutationFn: async (bookData: BookFormValues) => {
-      const res = await apiRequest("POST", "/api/books", {
-        ...bookData,
-        addedBy: user?.id,
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No auth token found");
+  
+      const payload = {
+        isbn: bookData.isbn,
+        title: bookData.title,
+        author: bookData.author,
+        bookFormat: bookData.bookFormat,
+        description: bookData.description || null,
+        imageLink: bookData.imageLink,
+        rating: parseFloat(bookData.rating),
+        numRatings: parseInt(bookData.numRatings),
+        genres: bookData.genres, // if this is a comma-separated string, leave as-is
+        numBooks: parseInt(bookData.quantity), // assuming this maps to quantity in the form
+      };
+  
+      const res = await fetch("http://127.0.0.1:8080/librarian/add-book", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
+  
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(`Failed to add book: ${error}`);
+      }
+  
       return await res.json();
     },
+  
     onSuccess: () => {
       toast({
         title: "Book added",
         description: "The book has been added successfully.",
       });
       setIsAddDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // adjust query key to match your fetch
     },
+  
     onError: (error: Error) => {
       toast({
         title: "Failed to add book",
@@ -106,6 +134,7 @@ const ManageBooks = () => {
       });
     },
   });
+  
 
   // Update book mutation
   const updateBookMutation = useMutation({
