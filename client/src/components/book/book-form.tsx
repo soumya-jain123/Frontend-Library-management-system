@@ -28,35 +28,8 @@ interface BookFormProps {
   isSubmitting?: boolean;
 }
 
-// Extend the book schema with client-side validation
-const bookFormSchema = insertBookSchema.extend({
-  title: z.string().min(2, "Title must be at least 2 characters"),
-  author: z.string().min(2, "Author must be at least 2 characters"),
-  isbn: z.string().min(10, "ISBN must be at least 10 characters"),
-  category: z.string().min(2, "Category is required"),
-  publicationYear: z
-    .number()
-    .int("Must be a year")
-    .min(1000, "Invalid year")
-    .max(new Date().getFullYear(), "Cannot be a future year")
-    .optional()
-    .nullable()
-    .or(z.string().regex(/^\d+$/).transform(Number).optional()),
-  description: z.string().optional(),
-  coverImage: z.string().url("Must be a valid URL").optional().nullable(),
-  quantity: z
-    .number()
-    .int("Must be a whole number")
-    .min(1, "Must have at least 1 copy")
-    .default(1),
-  available: z
-    .number()
-    .int("Must be a whole number")
-    .min(0, "Cannot be negative")
-    .default(1),
-});
-
-export type BookFormValues = z.infer<typeof bookFormSchema>;
+// Use the new insertBookSchema directly for validation
+export type BookFormValues = z.infer<typeof insertBookSchema>;
 
 const BookForm: React.FC<BookFormProps> = ({
   onSubmit,
@@ -64,73 +37,25 @@ const BookForm: React.FC<BookFormProps> = ({
   isSubmitting = false,
 }) => {
   const form = useForm<BookFormValues>({
-    resolver: zodResolver(bookFormSchema),
+    resolver: zodResolver(insertBookSchema),
     defaultValues: {
+      isbn: defaultValues?.isbn || "",
       title: defaultValues?.title || "",
       author: defaultValues?.author || "",
-      isbn: defaultValues?.isbn || "",
-      category: defaultValues?.category || "",
-      publicationYear: defaultValues?.publicationYear || null,
+      bookFormat: defaultValues?.bookFormat || "",
       description: defaultValues?.description || "",
-      coverImage: defaultValues?.coverImage || null,
-      quantity: defaultValues?.quantity || 1,
-      available: defaultValues?.available || 1,
+      imageLink: defaultValues?.imageLink || "",
+      rating: defaultValues?.rating || 0,
+      numRatings: defaultValues?.numRatings || 0,
+      genres: defaultValues?.genres || "",
+      numBooks: defaultValues?.numBooks || 1,
     },
   });
-
-  // Book categories
-  const categories = [
-    "Fiction",
-    "Non-Fiction",
-    "Science",
-    "Technology",
-    "Computer Science",
-    "Engineering",
-    "Mathematics",
-    "Philosophy",
-    "Psychology",
-    "History",
-    "Biography",
-    "Self-Help",
-    "Business",
-    "Economics",
-    "Arts",
-    "Literature",
-    "Reference",
-  ];
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title*</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter book title" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="author"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Author*</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter author name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <FormField
             control={form.control}
             name="isbn"
@@ -144,129 +69,111 @@ const BookForm: React.FC<BookFormProps> = ({
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
-            name="category"
+            name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Category*</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="publicationYear"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Publication Year</FormLabel>
+                <FormLabel>Title*</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Enter publication year"
-                    {...field}
-                    value={field.value === null ? "" : field.value}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === ""
-                          ? null
-                          : parseInt(e.target.value, 10)
-                      )
-                    }
-                  />
+                  <Input placeholder="Enter book title" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
-            name="coverImage"
+            name="author"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Cover Image URL</FormLabel>
+                <FormLabel>Author*</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Enter cover image URL"
-                    {...field}
-                    value={field.value === null ? "" : field.value}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === "" ? null : e.target.value
-                      )
-                    }
-                  />
+                  <Input placeholder="Enter author name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
-            name="quantity"
+            name="bookFormat"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Quantity*</FormLabel>
+                <FormLabel>Book Format*</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min={1}
-                    placeholder="Enter quantity"
-                    {...field}
-                    onChange={(e) =>
-                      field.onChange(parseInt(e.target.value, 10))
-                    }
-                  />
+                  <Input placeholder="e.g. Hardcover, Paperback, eBook" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
-            name="available"
+            name="imageLink"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Available*</FormLabel>
+                <FormLabel>Cover Image URL*</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="Enter available quantity"
-                    {...field}
-                    onChange={(e) =>
-                      field.onChange(parseInt(e.target.value, 10))
-                    }
-                  />
+                  <Input placeholder="Enter cover image URL" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="rating"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Rating*</FormLabel>
+                <FormControl>
+                  <Input type="number" step="0.01" min={0} max={5} placeholder="Enter rating (e.g. 4.5)" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="numRatings"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Number of Ratings*</FormLabel>
+                <FormControl>
+                  <Input type="number" min={0} placeholder="Enter number of ratings" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="genres"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Genres*</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter genres (comma separated)" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="numBooks"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Number of Books*</FormLabel>
+                <FormControl>
+                  <Input type="number" min={1} placeholder="Enter number of books" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
         <FormField
           control={form.control}
           name="description"
@@ -274,17 +181,12 @@ const BookForm: React.FC<BookFormProps> = ({
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Enter book description"
-                  rows={4}
-                  {...field}
-                />
+                <Textarea placeholder="Enter book description" rows={4} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => form.reset()}>
             Reset
