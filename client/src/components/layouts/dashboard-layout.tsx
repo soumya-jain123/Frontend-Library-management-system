@@ -74,6 +74,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       return [
         ...commonItems,
         { label: "Manage Librarians", icon: <Users className="h-4 w-4 mr-3" />, href: "/admin/librarians" },
+        { label: "Manage Users", icon: <UserCheck className="h-4 w-4 mr-3" />, href: "/librarian/manage-users" },
         { label: "Reports", icon: <BarChart3 className="h-4 w-4 mr-3" />, href: "/admin/reports" },
       ];
     } else if (user?.role === "librarian") {

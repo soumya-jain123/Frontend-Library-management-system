@@ -23,17 +23,8 @@ export function ProtectedRoute({
     );
   }
 
-  // Special case for direct URL access
-  // If trying to access a role-specific URL, we'll allow it directly
-  // This is for demo/testing purposes
+  // If user is not logged in, redirect to auth page
   if (!user) {
-    // Check if trying to access a role-specific route
-    if (path.includes('/admin') || path.includes('/librarian') || path.includes('/student')) {
-      // For direct role access, we'll just render the component
-      // In a real app, you would redirect to login
-      return <Route path={path} component={Component} />;
-    }
-    
     return (
       <Route path={path}>
         <Redirect to="/auth" />
@@ -43,13 +34,7 @@ export function ProtectedRoute({
 
   // Check if user role is allowed to access this route
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Special case for direct URL access
-    // If trying to access a role URL directly, use that role instead
-    if (path === '/admin' || path === '/librarian' || path === '/student') {
-      // For direct role access, we'll allow it
-      return <Route path={path} component={Component} />;
-    }
-    
+    // If user's role is not allowed, redirect to unauthorized page
     return (
       <Route path={path}>
         <Redirect to="/unauthorized" />

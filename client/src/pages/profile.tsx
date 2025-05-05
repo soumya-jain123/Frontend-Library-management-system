@@ -43,12 +43,8 @@ const profileUpdateSchema = z.object({
 
 // Password update schema
 const passwordUpdateSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
+  email: z.string().email("Valid email is required"),
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(1, "Please confirm your password"),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
 });
 
 type ProfileUpdateValues = z.infer<typeof profileUpdateSchema>;
@@ -72,9 +68,8 @@ const Profile = () => {
   const passwordForm = useForm<PasswordUpdateValues>({
     resolver: zodResolver(passwordUpdateSchema),
     defaultValues: {
-      currentPassword: "",
+      email: user?.email || "",
       newPassword: "",
-      confirmPassword: "",
     },
   });
 
@@ -116,7 +111,7 @@ const Profile = () => {
   const updatePasswordMutation = useMutation({
     mutationFn: async (data: PasswordUpdateValues) => {
       const res = await apiRequest("PUT", `/api/users/${user?.id}/password`, {
-        currentPassword: data.currentPassword,
+        email: data.email,
         newPassword: data.newPassword,
       });
       return await res.json();
@@ -126,7 +121,7 @@ const Profile = () => {
         title: "Password updated",
         description: "Your password has been changed successfully.",
       });
-      passwordForm.reset();
+      passwordForm.reset({ newPassword: "" });
     },
     onError: (error: Error) => {
       toast({
@@ -327,25 +322,20 @@ const Profile = () => {
                         <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
                           <FormField
                             control={passwordForm.control}
-                            name="currentPassword"
+                            name="email"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Current Password</FormLabel>
+                                <FormLabel>Email Address</FormLabel>
                                 <FormControl>
                                   <div className="relative">
-                                    <Key className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                                    <Input 
-                                      className="pl-10" 
-                                      type="password" 
-                                      {...field} 
-                                    />
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                                    <Input className="pl-10" type="email" {...field} />
                                   </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-
                           <FormField
                             control={passwordForm.control}
                             name="newPassword"
@@ -355,11 +345,7 @@ const Profile = () => {
                                 <FormControl>
                                   <div className="relative">
                                     <Key className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                                    <Input 
-                                      className="pl-10" 
-                                      type="password" 
-                                      {...field} 
-                                    />
+                                    <Input className="pl-10" type="password" {...field} />
                                   </div>
                                 </FormControl>
                                 <FormDescription>
@@ -369,28 +355,6 @@ const Profile = () => {
                               </FormItem>
                             )}
                           />
-
-                          <FormField
-                            control={passwordForm.control}
-                            name="confirmPassword"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Confirm New Password</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Key className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                                    <Input 
-                                      className="pl-10" 
-                                      type="password" 
-                                      {...field} 
-                                    />
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
                           <div className="pt-2">
                             <Button
                               type="submit"
@@ -402,7 +366,7 @@ const Profile = () => {
                                   Updating...
                                 </>
                               ) : (
-                                "Update Password"
+                                <>Update Password</>
                               )}
                             </Button>
                           </div>

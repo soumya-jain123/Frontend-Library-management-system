@@ -28,6 +28,7 @@ import DashboardLayout from "@/components/layouts/dashboard-layout";
 import AdminDashboard from "@/components/dashboard/admin-dashboard";
 import LibrarianDashboard from "@/components/dashboard/librarian-dashboard";
 import StudentDashboard from "@/components/dashboard/student-dashboard";
+import ManageUsers from "@/pages/librarian/manage-users";
 
 // Create wrapped dashboard components with layout
 const WrappedAdminDashboard = () => (
@@ -106,6 +107,11 @@ function Router() {
       <ProtectedRoute 
         path="/librarian/students" 
         component={ManageStudents} 
+        allowedRoles={["admin", "librarian"]} 
+      />
+      <ProtectedRoute 
+        path="/librarian/manage-users" 
+        component={ManageUsers} 
         allowedRoles={["admin", "librarian"]} 
       />
       

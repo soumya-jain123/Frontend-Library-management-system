@@ -43,7 +43,7 @@ import { useToast } from "../../hooks/use-toast";
 import { apiRequest, queryClient } from "../../lib/queryClient";
 import { User } from "../../shared/schema";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Search, PlusCircle, AlertCircle } from "lucide-react";
+import { Loader2, Search, PlusCircle, AlertCircle, Trash2 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -63,6 +63,7 @@ const ManageLibrarians = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [librarianToDelete, setLibrarianToDelete] = useState<number | null>(null);
 
   const { data: librarians, isLoading } = useQuery<User[]>({
     queryKey: ["/api/users/librarian"],
@@ -127,8 +128,35 @@ const ManageLibrarians = () => {
     },
   });
 
+  const deleteLibrarianMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/users/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Librarian deleted",
+        description: "The librarian has been deleted successfully.",
+      });
+      setLibrarianToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/users/librarian"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete librarian",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: CreateLibrarianValues) => {
     createLibrarianMutation.mutate(data);
+  };
+
+  const handleDeleteLibrarian = () => {
+    if (librarianToDelete !== null) {
+      deleteLibrarianMutation.mutate(librarianToDelete);
+    }
   };
 
   // Filter librarians
@@ -340,6 +368,21 @@ const ManageLibrarians = () => {
                               )}
                             </Button>
                           </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setLibrarianToDelete(librarian.id)}
+                              disabled={librarian.id === 0 || deleteLibrarianMutation.isPending}
+                            >
+                              {deleteLibrarianMutation.isPending && librarianToDelete === librarian.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-2" />
+                              )}
+                              Delete
+                            </Button>
+                          </TableCell>
                         </motion.tr>
                       ))}
                     </AnimatePresence>
@@ -349,6 +392,34 @@ const ManageLibrarians = () => {
             )}
           </CardContent>
         </Card>
+
+        <Dialog open={librarianToDelete !== null} onOpenChange={open => !open && setLibrarianToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Deletion</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this librarian? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setLibrarianToDelete(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteLibrarian}
+                disabled={deleteLibrarianMutation.isPending}
+              >
+                {deleteLibrarianMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
