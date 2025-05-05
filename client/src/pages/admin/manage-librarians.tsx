@@ -35,17 +35,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "../../components/ui/form";
-import { Input } from "../../components/ui/input";
-import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
-import { useToast } from "../../hooks/use-toast";
-import { apiRequest, queryClient } from "../../lib/queryClient";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { User } from "../../shared/schema";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Search, PlusCircle, AlertCircle, Trash2 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:8080";
 
 const createLibrarianSchema = z.object({
   username: z
@@ -65,8 +64,45 @@ const ManageLibrarians = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [librarianToDelete, setLibrarianToDelete] = useState<number | null>(null);
 
-  const { data: librarians, isLoading } = useQuery<User[]>({
-    queryKey: ["/api/users/librarian"],
+  const deleteLibrarian = async (librarianId: number) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No authorization token found");
+  
+    const response = await fetch(`http://127.0.0.1:8080/admin/delete-user/${librarianId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to delete librarian");
+    }
+  };
+
+  const { data: librarians, isLoading, error } = useQuery({
+    queryKey: ["/admin/get-user-by-role/LIBRARIAN"],
+    // enabled: !!user && user.role.toLowerCase() === "admin",
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+  
+      const response = await fetch("http://127.0.0.1:8080/admin/get-user-by-role/LIBRARIAN", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+  
+      if (!response.ok || data.statusCode !== 200) {
+        throw new Error(data.message || "Failed to fetch librarians");
+      }
+  
+      return data.userList;
+    },
   });
 
   const form = useForm<CreateLibrarianValues>({
@@ -81,11 +117,31 @@ const ManageLibrarians = () => {
 
   const createLibrarianMutation = useMutation({
     mutationFn: async (data: CreateLibrarianValues) => {
-      const res = await apiRequest("POST", "/api/register", {
-        ...data,
-        role: "librarian",
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+      console.log("Creating librarian with data:", data); // Debugging line
+      const payload = {
+        email: data.email,
+        password: data.password,
+        displayName: data.name,
+      };
+  
+      const response = await fetch("http://127.0.0.1:8080/admin/add-librarian", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
       });
-      return await res.json();
+  
+      const result = await response.json();
+  
+      if (!response.ok || result.statusCode !== 200) {
+        throw new Error(result.message || "Failed to create librarian");
+      }
+  
+      return result;
     },
     onSuccess: () => {
       toast({
@@ -94,7 +150,7 @@ const ManageLibrarians = () => {
       });
       form.reset();
       setIsAddDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/users/librarian"] });
+      queryClient.invalidateQueries({ queryKey: ["/admin/get-user-by-role/LIBRARIAN"] });
     },
     onError: (error: Error) => {
       toast({
@@ -104,21 +160,39 @@ const ManageLibrarians = () => {
       });
     },
   });
+  
+  
 
   const toggleStatusMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("PUT", `/api/users/${id}/toggle-status`);
-      return await res.json();
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+  
+      const res = await fetch(`http://127.0.0.1:8080/admin/enable-disable/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      const data = await res.json();
+      if (!res.ok || data.statusCode !== 200) {
+        throw new Error(data.message || "Failed to toggle user status");
+      }
+      
+      // console.log("Toggle status response:", data); // Debugging line
+      return data; // contains `enabled` and `user`
     },
+
     onSuccess: (data) => {
       toast({
-        title: `Librarian ${data.active ? "activated" : "deactivated"}`,
-        description: `${data.name}'s account has been ${
-          data.active ? "activated" : "deactivated"
-        }.`,
+        title: `${data.user.displayName}`,
+        description: `${data.message}.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/users/librarian"] });
+  
+      queryClient.invalidateQueries({ queryKey: ["/admin/get-user-by-role/LIBRARIAN"] });
     },
+  
     onError: (error: Error) => {
       toast({
         title: "Failed to update status",
@@ -127,18 +201,32 @@ const ManageLibrarians = () => {
       });
     },
   });
+  
 
   const deleteLibrarianMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/users/${id}`);
-    },
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+    
+      const res = await fetch(`http://127.0.0.1:8080/admin/delete-user/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to delete librarian");
+      }
+    },    
     onSuccess: () => {
       toast({
         title: "Librarian deleted",
         description: "The librarian has been deleted successfully.",
       });
       setLibrarianToDelete(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/users/librarian"] });
+      queryClient.invalidateQueries({ queryKey: ["/admin/get-user-by-role/LIBRARIAN"] });
     },
     onError: (error: Error) => {
       toast({
@@ -159,13 +247,25 @@ const ManageLibrarians = () => {
     }
   };
 
+  let filteredLibrarians = librarians?.filter((librarian) => {
+    const displayName = librarian.displayName?.toLowerCase() || ''; // Default to empty string if null or undefined
+    const username = librarian.username?.toLowerCase() || ''; // Default to empty string if null or undefined
+    const query = searchQuery?.toLowerCase() || ''; // Default to empty string if null or undefined
+  
+    return (
+      displayName.includes(query) ||
+      username.includes(query) ||
+      librarian.email.toLowerCase().includes(query)
+    );
+  });
+
   // Filter librarians
-  let filteredLibrarians = librarians?.filter(
-    (librarian) =>
-      librarian.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      librarian.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      librarian.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // let filteredLibrarians = librarians?.filter(
+  //   (librarian) =>
+  //     librarian.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     librarian.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     librarian.email.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
 
   // Inject dummy librarian if none exist
   if (!filteredLibrarians || filteredLibrarians.length === 0) {
@@ -341,15 +441,15 @@ const ManageLibrarians = () => {
                           className="border-b"
                         >
                           <TableCell className="font-medium">
-                            {librarian.name}
+                            {librarian.displayName}
                           </TableCell>
                           <TableCell>{librarian.username}</TableCell>
                           <TableCell>{librarian.email}</TableCell>
                           <TableCell>
                             <Badge
-                              variant={librarian.active ? "outline" : "destructive"}
+                              variant={librarian.enabled ? "outline" : "destructive"}
                             >
-                              {librarian.active ? "Active" : "Deactivated"}
+                              {librarian.enabled ? "Active" : "Deactivated"}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -361,7 +461,7 @@ const ManageLibrarians = () => {
                             >
                               {toggleStatusMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : librarian.active ? (
+                              ) : librarian.enabled ? (
                                 "Deactivate"
                               ) : (
                                 "Activate"
