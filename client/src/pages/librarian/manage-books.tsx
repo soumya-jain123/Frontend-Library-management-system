@@ -59,8 +59,8 @@ const ManageBooks = () => {
           'Authorization': `Bearer ${token}`,
         },
       });
-  
-      console.log('Fetched books:', response); // Log the fetched books
+
+
       const data = await response.json();
       return data.content; // Assuming the response contains the list of books
     },
@@ -85,20 +85,48 @@ const ManageBooks = () => {
   // Create book mutation
   const createBookMutation = useMutation({
     mutationFn: async (bookData: BookFormValues) => {
-      const res = await apiRequest("POST", "/api/books", {
-        ...bookData,
-        addedBy: user?.id,
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No auth token found");
+  
+      const payload = {
+        isbn: bookData.isbn,
+        title: bookData.title,
+        author: bookData.author,
+        bookFormat: bookData.bookFormat,
+        description: bookData.description || null,
+        imageLink: bookData.imageLink,
+        rating: parseFloat(bookData.rating),
+        numRatings: parseInt(bookData.numRatings),
+        genres: bookData.genres, // if this is a comma-separated string, leave as-is
+        numBooks: parseInt(bookData.quantity), // assuming this maps to quantity in the form
+      };
+  
+      const res = await fetch("http://127.0.0.1:8080/librarian/add-book", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
+  
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(`Failed to add book: ${error}`);
+      }
+  
       return await res.json();
     },
+  
     onSuccess: () => {
       toast({
         title: "Book added",
         description: "The book has been added successfully.",
       });
       setIsAddDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // adjust query key to match your fetch
     },
+  
     onError: (error: Error) => {
       toast({
         title: "Failed to add book",
@@ -107,6 +135,7 @@ const ManageBooks = () => {
       });
     },
   });
+  
 
   // Update book mutation
   const updateBookMutation = useMutation({
@@ -132,9 +161,68 @@ const ManageBooks = () => {
   });
 
   // Delete book mutation
+  // const deleteBookMutation = useMutation({
+  //   mutationFn: async (id: number) => {
+  //     await apiRequest("DELETE", `/api/books/${id}`);
+  //   },
+  //   onSuccess: () => {
+  //     toast({
+  //       title: "Book deleted",
+  //       description: "The book has been deleted successfully.",
+  //     });
+  //     setBookToDelete(null);
+  //     queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+  //   },
+  //   onError: (error: Error) => {
+  //     toast({
+  //       title: "Failed to delete book",
+  //       description: error.message,
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
+
+  // const deleteBookMutation = useMutation({
+  //   mutationFn: async (id: number) => {
+  //     await apiRequest("DELETE", `/api/books/${id}`);
+  //   },
+  //   onSuccess: () => {
+  //     toast({
+  //       title: "Book deleted",
+  //       description: "The book has been deleted successfully.",
+  //     });
+  //     setBookToDelete(null);
+  //     queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+  //   },
+  //   onError: (error: Error) => {
+  //     toast({
+  //       title: "Failed to delete book",
+  //       description: error.message,
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
+
   const deleteBookMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/books/${id}`);
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("User not authenticated");
+      console.log("Deleting book with ID:", id);
+      await fetch(`http://127.0.0.1:8080/librarian/delete-book/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("User not authenticated");
+      console.log("Deleting book with ID:", id);
+      await fetch(`http://127.0.0.1:8080/librarian/delete-book/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
     },
     onSuccess: () => {
       toast({
@@ -142,7 +230,8 @@ const ManageBooks = () => {
         description: "The book has been deleted successfully.",
       });
       setBookToDelete(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // Use the key you're using for books query
+      queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // Use the key you're using for books query
     },
     onError: (error: Error) => {
       toast({
