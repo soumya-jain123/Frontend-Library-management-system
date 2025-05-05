@@ -64,9 +64,34 @@ const ManageUsers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [librarianToDelete, setLibrarianToDelete] = useState<number | null>(null);
 
-  const { data: users, isLoading } = useQuery<User[]>({
-    queryKey: ["/api/users/librarian"],
+  // const { data: users, isLoading } = useQuery<User[]>({
+  //   queryKey: ["/api/users/librarian"],
+  // });
+
+  const { data: users, isLoading, error } = useQuery({
+    queryKey: ["/admin/get-user-by-role/LIBRARIAN"],
+    // enabled: !!user && user.role.toLowerCase() === "admin",
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+  
+      const response = await fetch("http://127.0.0.1:8080/admin/get-user-by-role/USER", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+  
+      if (!response.ok || data.statusCode !== 200) {
+        throw new Error(data.message || "Failed to fetch librarians");
+      }
+  
+      return data.userList;
+    },
   });
 
   const form = useForm<CreateLibrarianValues>({
@@ -105,44 +130,74 @@ const ManageUsers = () => {
     },
   });
 
-  const toggleStatusMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("PUT", `/api/users/${id}/toggle-status`);
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: `User ${data.active ? "activated" : "deactivated"}`,
-        description: `${data.name}'s account has been ${
-          data.active ? "activated" : "deactivated"
-        }.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/users/librarian"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to update status",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+ const toggleStatusMutation = useMutation({
+     mutationFn: async (id: number) => {
+       const token = localStorage.getItem("authToken");
+       if (!token) throw new Error("No authorization token found");
+   
+       const res = await fetch(`http://127.0.0.1:8080/admin/enable-disable/${id}`, {
+         method: "PUT",
+         headers: {
+           Authorization: `Bearer ${token}`,
+         },
+       });
+   
+       const data = await res.json();
+       if (!res.ok || data.statusCode !== 200) {
+         throw new Error(data.message || "Failed to toggle user status");
+       }
+       
+       // console.log("Toggle status response:", data); // Debugging line
+       return data; // contains `enabled` and `user`
+     },
+ 
+     onSuccess: (data) => {
+       toast({
+         title: `${data.user.displayName}`,
+         description: `${data.message}.`,
+       });
+   
+       queryClient.invalidateQueries({ queryKey: ["/admin/get-user-by-role/USER"] });
+     },
+   
+     onError: (error: Error) => {
+       toast({
+         title: "Failed to update status",
+         description: error.message,
+         variant: "destructive",
+       });
+     },
+   });
 
+  
   const deleteLibrarianMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/users/${id}`);
-    },
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+    
+      const res = await fetch(`http://127.0.0.1:8080/admin/delete-user/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to delete librarian");
+      }
+    },    
     onSuccess: () => {
       toast({
         title: "User deleted",
         description: "The user has been deleted successfully.",
       });
-      setUserToDelete(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/users/librarian"] });
+      setLibrarianToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["/admin/get-user-by-role/USER"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to delete user",
+        title: "Failed to delete User",
         description: error.message,
         variant: "destructive",
       });
@@ -160,12 +215,24 @@ const ManageUsers = () => {
   };
 
   // Filter users
-  let filteredUsers = users?.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+
+  let filteredUsers = users?.filter((user) => {
+    const displayName = user.displayName?.toLowerCase() || ''; // Default to empty string if null or undefined
+    const username = user.username?.toLowerCase() || ''; // Default to empty string if null or undefined
+    const query = searchQuery?.toLowerCase() || ''; // Default to empty string if null or undefined
+  
+    return (
+      displayName.includes(query) ||
+      username.includes(query) ||
+      user.email.toLowerCase().includes(query)
+    );
+  });
+  // let filteredUsers = users?.filter(
+  //   (user) =>
+  //     user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
 
   // Inject dummy user if none exist
   if (!filteredUsers || filteredUsers.length === 0) {
@@ -181,6 +248,8 @@ const ManageUsers = () => {
     ];
   }
 
+  // console.log("Users:", users); // Debugging line
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -193,7 +262,7 @@ const ManageUsers = () => {
           </p>
         </div>
 
-        <div className="flex justify-between items-center">
+        {/* <div className="flex justify-between items-center">
           <div className="relative max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
             <Input
@@ -303,7 +372,7 @@ const ManageUsers = () => {
               </Form>
             </DialogContent>
           </Dialog>
-        </div>
+        </div> */}
 
         <Card>
           <CardHeader className="pb-3">
@@ -341,15 +410,15 @@ const ManageUsers = () => {
                           className="border-b"
                         >
                           <TableCell className="font-medium">
-                            {user.name}
+                            {user.displayName}
                           </TableCell>
                           <TableCell>{user.username}</TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <Badge
-                              variant={user.active ? "outline" : "destructive"}
+                              variant={user.enabled ? "outline" : "destructive"}
                             >
-                              {user.active ? "Active" : "Deactivated"}
+                              {user.enabled ? "Active" : "Deactivated"}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -361,26 +430,12 @@ const ManageUsers = () => {
                             >
                               {toggleStatusMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : user.active ? (
+                              ) : user.enabled
+                              ? (
                                 "Deactivate"
                               ) : (
                                 "Activate"
                               )}
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => setUserToDelete(user.id)}
-                              disabled={user.id === 0 || deleteLibrarianMutation.isPending}
-                            >
-                              {deleteLibrarianMutation.isPending && userToDelete === user.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              ) : (
-                                <Trash2 className="h-4 w-4 mr-2" />
-                              )}
-                              Delete
                             </Button>
                           </TableCell>
                         </motion.tr>
@@ -392,34 +447,6 @@ const ManageUsers = () => {
             )}
           </CardContent>
         </Card>
-
-        <Dialog open={userToDelete !== null} onOpenChange={open => !open && setUserToDelete(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this User? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setUserToDelete(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteLibrarian}
-                disabled={deleteLibrarianMutation.isPending}
-              >
-                {deleteLibrarianMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="mr-2 h-4 w-4" />
-                )}
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </DashboardLayout>
   );

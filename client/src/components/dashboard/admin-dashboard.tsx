@@ -18,22 +18,92 @@ const AdminDashboard = () => {
 
   // Fetch librarians count
   const { data: librarians } = useQuery({
-    queryKey: ["/api/users/librarian"],
-    enabled: !!user && user.role === "admin"
+    queryKey: ["/admin/get-user-by-role/LIBRARIAN"],
+    // enabled: !!user && user.role.toLowerCase() === "admin",
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+  
+      const response = await fetch("http://127.0.0.1:8080/admin/get-user-by-role/LIBRARIAN", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+  
+      if (!response.ok || data.statusCode !== 200) {
+        throw new Error(data.message || "Failed to fetch librarians");
+      }
+  
+      return data.userList;
+    },
   });
 
-  // Fetch students count
+  // // Fetch students count
+  // const { data: students } = useQuery({
+  //   queryKey: ["/api/users/student"],
+  //   enabled: !!user && user.role === "admin"
+  // });
+
   const { data: students } = useQuery({
-    queryKey: ["/api/users/student"],
-    enabled: !!user && user.role === "admin"
+    queryKey: ["/admin/get-user-by-role/USER"],
+    // enabled: !!user && user.role.toLowerCase() === "admin",
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+  
+      const response = await fetch("http://127.0.0.1:8080/admin/get-user-by-role/USER", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+  
+      if (!response.ok || data.statusCode !== 200) {
+        throw new Error(data.message || "Failed to fetch librarians");
+      }
+  
+      return data.userList;
+    },
   });
+
 
   // Fetch total fines for current month
-  const currentDate = new Date();
+  // const currentDate = new Date();
+  // const { data: fineData } = useQuery({
+  //   queryKey: [`/api/reports/fines/month/${currentDate.getMonth()}/${currentDate.getFullYear()}`],
+  //   enabled: !!user && user.role === "admin"
+  // });
+
   const { data: fineData } = useQuery({
-    queryKey: [`/api/reports/fines/month/${currentDate.getMonth()}/${currentDate.getFullYear()}`],
-    enabled: !!user && user.role === "admin"
+    queryKey: ["/admin/total-fine"],
+    // enabled: !!user && user.role === "admin",
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No authorization token found");
+  
+      const response = await fetch("http://127.0.0.1:8080/admin/total-fine", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+  
+      if (!response.ok || data.statusCode !== 200) {
+        throw new Error(data.message || "Failed to fetch librarians");
+      }
+  
+      return data.userList;
+    },
   });
+
+  console.log("Fine Data : " + fineData);
 
   // Fetch book requests
   const { data: bookRequests } = useQuery({

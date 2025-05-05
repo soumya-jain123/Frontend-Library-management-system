@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import DashboardLayout from "@/components/layouts/dashboard-layout";
 import { Book } from "@shared/schema";
@@ -40,9 +40,33 @@ const ManageBooks = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch all books
-  const { data: books, isLoading } = useQuery<Book[]>({
-    queryKey: ["/api/books"],
+  // const { data: books, isLoading } = useQuery<Book[]>({
+  //   queryKey: ["/api/books"],
+  // });
+
+  // Fetching books using useQuery
+  const { data: books, isLoading } = useQuery({
+    queryKey: ['/alluser/get-books'], // Query key
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No token found in localStorage");
+      }
+  
+      const response = await fetch('http://127.0.0.1:8080/alluser/get-all-books/70687', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+  
+      console.log('Fetched books:', response); // Log the fetched books
+      const data = await response.json();
+      return data.content; // Assuming the response contains the list of books
+    },
   });
+
+  // console.log(books); // Log the fetched books to the console
 
   // Search books when query changes
   const { data: searchResults, isLoading: isSearching } = useQuery<Book[]>({
