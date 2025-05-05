@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,12 +17,67 @@ import NotificationList from "@/components/notification/notification-list";
 const LibrarianDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [bookCount, setBookCount] = useState<number | null>(null);
 
-  // Fetch all books
-  const { data: books } = useQuery({
-    queryKey: ["/api/books"],
-    enabled: !!user && user.role === "librarian"
+  // // Fetch all books
+  // const { data: books } = useQuery({
+  //   queryKey: ["/alluser/get-all-books"],
+  //   enabled: !!user && user.role === "librarian"
+  // });
+
+  const {  data: books, isLoading: isBooksLoading, error: booksError  } = useQuery({
+    queryKey: ["/alluser/get-all-books"],
+    // enabled: !!user && user.role.toLowerCase() === "librarian",
+    enabled: true,
+    queryFn: async () => {
+      try {
+        console.log("Fetching books..."); // Debugging line
+        const token = localStorage.getItem("authToken");
+        if (!token) throw new Error("No authorization token found");
+        console.log("Fetching books with token:", token); // Debugging line
+        const response = await fetch("http://127.0.0.1:8080/alluser/get-all-books/12", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
+        // console.log("Response status:", response.status);
+        const data = await response.json();
+        if (response.statusCode !== 200) {
+          throw new Error(data.message || "Failed to fetch books");
+        }
+        
+        return data.content;
+      } catch (error) {
+        console.error("Query error:", error);
+        throw error; // rethrow for react-query to catch
+      }
+    },
   });
+
+  useEffect(() => {
+    const fetchBookCount = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await fetch('http://127.0.0.1:8080/alluser/get-total-books', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        setBookCount(data); // Assuming the response contains totalBooks
+      } catch (error) {
+        console.error('Error fetching book count:', error);
+        setBookCount(null); // Or you can set to 0 if you prefer
+      }
+    };
+  
+    fetchBookCount();
+  }, []);
+  
+  console.log("Books data:", books); // Debugging line to check the fetched data
 
   // Fetch active borrowings
   const { data: activeBorrowings } = useQuery({
@@ -65,7 +120,8 @@ const LibrarianDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard 
           title="Total Books"
-          value={books?.length || 0}
+          // value={books?.length || 0}
+          value={bookCount !== null ? bookCount : "—"} // Shows placeholder until loaded
           icon={<BookOpen className="h-5 w-5" />}
           description="In the library collection"
           className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
