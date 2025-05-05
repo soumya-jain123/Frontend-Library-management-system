@@ -214,15 +214,6 @@ const ManageBooks = () => {
           'Authorization': `Bearer ${token}`,
         },
       });
-      const token = localStorage.getItem("authToken");
-      if (!token) throw new Error("User not authenticated");
-      console.log("Deleting book with ID:", id);
-      await fetch(`http://127.0.0.1:8080/librarian/delete-book/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
     },
     onSuccess: () => {
       toast({
