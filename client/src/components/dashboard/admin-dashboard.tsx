@@ -11,7 +11,6 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 import StatsCard from "@/components/stats/stats-card";
-import NotificationList from "@/components/notification/notification-list";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -42,12 +41,6 @@ const AdminDashboard = () => {
     enabled: !!user && user.role === "admin"
   });
 
-  // Fetch notifications
-  const { data: notifications } = useQuery({
-    queryKey: ["/api/notifications"],
-    enabled: !!user
-  });
-
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -62,7 +55,7 @@ const AdminDashboard = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatsCard 
           title="Total Librarians"
           value={librarians?.length || 0}
@@ -72,7 +65,7 @@ const AdminDashboard = () => {
         />
         
         <StatsCard 
-          title="Total Students"
+          title="Total Users"
           value={students?.length || 0}
           icon={<Users className="h-5 w-5" />}
           description="Registered users"
@@ -86,20 +79,11 @@ const AdminDashboard = () => {
           description="Revenue from fines"
           className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
         />
-        
-        <StatsCard 
-          title="Book Requests"
-          value={bookRequests?.filter(r => r.status === "pending").length || 0}
-          icon={<Layers className="h-5 w-5" />}
-          description="Pending approvals"
-          className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
-        />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsList className="grid w-full grid-cols-1 mb-4">
           <TabsTrigger value="overview">System Overview</TabsTrigger>
-          <TabsTrigger value="notifications">Recent Notifications</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
@@ -198,14 +182,6 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="notifications">
-          <Card>
-            <CardContent className="pt-6">
-              <NotificationList notifications={notifications || []} />
             </CardContent>
           </Card>
         </TabsContent>

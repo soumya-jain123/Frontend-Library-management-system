@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import DashboardLayout from "@/components/layouts/dashboard-layout";
@@ -33,7 +33,7 @@ const Settings = () => {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const { user, logoutMutation } = useAuth();
-  const [activeTab, setActiveTab] = useState("appearance");
+  const [activeTab, setActiveTab] = useState(user?.role === "admin" ? "appearance" : "appearance");
 
   // Settings states
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -56,6 +56,13 @@ const Settings = () => {
     logoutMutation.mutate();
   };
 
+  // Ensure admin users don't see notifications tab
+  useEffect(() => {
+    if (user?.role === "admin" && activeTab === "notifications") {
+      setActiveTab("appearance");
+    }
+  }, [activeTab, user?.role]);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -71,7 +78,9 @@ const Settings = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            {user?.role !== "admin" && (
+              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            )}
             <TabsTrigger value="privacy">Privacy</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
@@ -147,98 +156,100 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notification Settings</CardTitle>
-                  <CardDescription>
-                    Control how and when you receive notifications
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="email-notifications">Email Notifications</Label>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Receive email notifications for important updates
-                        </p>
+            {user?.role !== "admin" && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notification Settings</CardTitle>
+                    <CardDescription>
+                      Control how and when you receive notifications
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="email-notifications">Email Notifications</Label>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Receive email notifications for important updates
+                          </p>
+                        </div>
+                        <Switch
+                          id="email-notifications"
+                          checked={emailNotifications}
+                          onCheckedChange={setEmailNotifications}
+                        />
                       </div>
-                      <Switch
-                        id="email-notifications"
-                        checked={emailNotifications}
-                        onCheckedChange={setEmailNotifications}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="push-notifications">Push Notifications</Label>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Receive browser notifications when you're using the app
-                        </p>
-                      </div>
-                      <Switch
-                        id="push-notifications"
-                        checked={pushNotifications}
-                        onCheckedChange={setPushNotifications}
-                      />
-                    </div>
-                    
-                    <div className="pt-2 border-t">
-                      <h3 className="text-sm font-medium mb-3">Notification Types</h3>
                       
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5 h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
-                              <BellRing className="h-4 w-4" />
-                            </div>
-                            <div>
-                              <Label htmlFor="due-date-reminders">Due Date Reminders</Label>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Get reminders when your books are about to be due
-                              </p>
-                            </div>
-                          </div>
-                          <Switch
-                            id="due-date-reminders"
-                            checked={dueDateReminders}
-                            onCheckedChange={setDueDateReminders}
-                          />
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="push-notifications">Push Notifications</Label>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Receive browser notifications when you're using the app
+                          </p>
                         </div>
+                        <Switch
+                          id="push-notifications"
+                          checked={pushNotifications}
+                          onCheckedChange={setPushNotifications}
+                        />
+                      </div>
+                      
+                      <div className="pt-2 border-t">
+                        <h3 className="text-sm font-medium mb-3">Notification Types</h3>
                         
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5 h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
-                              <Bell className="h-4 w-4" />
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5 h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                                <BellRing className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <Label htmlFor="due-date-reminders">Due Date Reminders</Label>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Get reminders when your books are about to be due
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <Label htmlFor="new-arrivals">New Book Arrivals</Label>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Get notified when new books are added to the library
-                              </p>
-                            </div>
+                            <Switch
+                              id="due-date-reminders"
+                              checked={dueDateReminders}
+                              onCheckedChange={setDueDateReminders}
+                            />
                           </div>
-                          <Switch
-                            id="new-arrivals"
-                            checked={newArrivalsNotifications}
-                            onCheckedChange={setNewArrivalsNotifications}
-                          />
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5 h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                                <Bell className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <Label htmlFor="new-arrivals">New Book Arrivals</Label>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Get notified when new books are added to the library
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              id="new-arrivals"
+                              checked={newArrivalsNotifications}
+                              onCheckedChange={setNewArrivalsNotifications}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button>Save Notification Settings</Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button>Save Notification Settings</Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            )}
           </TabsContent>
 
           <TabsContent value="privacy">

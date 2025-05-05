@@ -187,7 +187,7 @@ const ManageLibrarians = () => {
               <DialogHeader>
                 <DialogTitle>Add New Librarian</DialogTitle>
                 <DialogDescription>
-                  Create a new librarian account. They will have permissions to manage books and student borrowings.
+                  Create a new librarian account. They will have permissions to manage books and User borrowings.
                 </DialogDescription>
               </DialogHeader>
 

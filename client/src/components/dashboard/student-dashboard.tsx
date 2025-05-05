@@ -14,11 +14,11 @@ import StatsCard from "@/components/stats/stats-card";
 import BookCard from "@/components/book/book-card";
 import NotificationList from "@/components/notification/notification-list";
 
-const StudentDashboard = () => {
+const UserDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Fetch student's borrowings
+  // Fetch User's borrowings
   const { data: borrowings } = useQuery({
     queryKey: [`/api/borrowings/user/${user?.id}`],
     enabled: !!user
@@ -70,9 +70,9 @@ const StudentDashboard = () => {
       className="space-y-6"
     >
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Student Dashboard</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">User Dashboard</h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Welcome back, {user?.name}! Here's an overview of your library activity.
+          Welcome Back !!!
         </p>
       </div>
 
@@ -131,25 +131,25 @@ const StudentDashboard = () => {
                   <h3 className="text-lg font-semibold">Quick Actions</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Link href="/student/borrow" className="w-full">
+                  <Link href="/User/borrow" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <BookOpen className="h-5 w-5" />
                       <span>Borrow Books</span>
                     </div>
                   </Link>
-                  <Link href="/student/return" className="w-full">
+                  <Link href="/User/return" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <RotateCcw className="h-5 w-5" />
                       <span>Return Books</span>
                     </div>
                   </Link>
-                  <Link href="/student/status" className="w-full">
+                  <Link href="/User/status" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <BookOpenCheck className="h-5 w-5" />
                       <span>Check Status</span>
                     </div>
                   </Link>
-                  <Link href="/student/request" className="w-full">
+                  <Link href="/User/request" className="w-full">
                     <div className="h-24 flex flex-col items-center justify-center gap-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-4 py-2 w-full">
                       <PlusCircle className="h-5 w-5" />
                       <span>Request Books</span>
@@ -163,7 +163,7 @@ const StudentDashboard = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Current Borrowings</h3>
-                  <Link href="/student/status" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                  <Link href="/User/status" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
                     View All
                   </Link>
                 </div>
@@ -198,7 +198,7 @@ const StudentDashboard = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Popular Books</h3>
-                <Link href="/student/borrow" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                <Link href="/User/borrow" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3">
                   Browse All
                 </Link>
               </div>
@@ -301,4 +301,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboard;
+export default UserDashboard;

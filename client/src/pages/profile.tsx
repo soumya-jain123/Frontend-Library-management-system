@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
@@ -57,7 +57,7 @@ type PasswordUpdateValues = z.infer<typeof passwordUpdateSchema>;
 const Profile = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(user?.role === "admin" ? "profile" : "profile");
 
   // Profile update form
   const profileForm = useForm<ProfileUpdateValues>({
@@ -136,6 +136,13 @@ const Profile = () => {
       });
     },
   });
+
+  // Ensure admin users don't see activity tab
+  useEffect(() => {
+    if (user?.role === "admin" && activeTab === "activity") {
+      setActiveTab("profile");
+    }
+  }, [activeTab, user?.role]);
 
   // Handle form submissions
   const onProfileSubmit = (data: ProfileUpdateValues) => {
@@ -222,7 +229,9 @@ const Profile = () => {
               <TabsList className="mb-4">
                 <TabsTrigger value="profile">Profile Settings</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
-                <TabsTrigger value="activity">Library Activity</TabsTrigger>
+                {user?.role !== "admin" && (
+                  <TabsTrigger value="activity">Library Activity</TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="profile">
@@ -405,141 +414,143 @@ const Profile = () => {
               </TabsContent>
 
               <TabsContent value="activity">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center">
-                          <BookOpen className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
-                          Recent Borrowings
-                        </CardTitle>
-                        <CardDescription>
-                          Your recent book borrowing activity
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {isLoadingBorrowings ? (
-                          <div className="flex justify-center py-6">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          </div>
-                        ) : !borrowingHistory || borrowingHistory.length === 0 ? (
-                          <div className="text-center py-6">
-                            <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                            <p className="text-slate-500 dark:text-slate-400">
-                              You haven't borrowed any books yet
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {borrowingHistory.slice(0, 5).map((borrowing) => (
-                              <div key={borrowing.id} className="flex justify-between items-start p-3 border rounded-md">
-                                <div>
-                                  <h4 className="font-medium">{borrowing.book?.title}</h4>
-                                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                                    {borrowing.book?.author}
-                                  </p>
-                                  <div className="flex items-center mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                    <Calendar className="h-3 w-3 mr-1" />
-                                    {new Date(borrowing.borrowDate).toLocaleDateString()}
-                                    {borrowing.returnDate && (
-                                      <>
-                                        <span className="mx-1">-</span>
-                                        <Clock className="h-3 w-3 mr-1" />
-                                        {new Date(borrowing.returnDate).toLocaleDateString()}
-                                      </>
-                                    )}
+                {user?.role !== "admin" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="space-y-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center">
+                            <BookOpen className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
+                            Recent Borrowings
+                          </CardTitle>
+                          <CardDescription>
+                            Your recent book borrowing activity
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          {isLoadingBorrowings ? (
+                            <div className="flex justify-center py-6">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                          ) : !borrowingHistory || borrowingHistory.length === 0 ? (
+                            <div className="text-center py-6">
+                              <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                              <p className="text-slate-500 dark:text-slate-400">
+                                You haven't borrowed any books yet
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {borrowingHistory.slice(0, 5).map((borrowing) => (
+                                <div key={borrowing.id} className="flex justify-between items-start p-3 border rounded-md">
+                                  <div>
+                                    <h4 className="font-medium">{borrowing.book?.title}</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                      {borrowing.book?.author}
+                                    </p>
+                                    <div className="flex items-center mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                      <Calendar className="h-3 w-3 mr-1" />
+                                      {new Date(borrowing.borrowDate).toLocaleDateString()}
+                                      {borrowing.returnDate && (
+                                        <>
+                                          <span className="mx-1">-</span>
+                                          <Clock className="h-3 w-3 mr-1" />
+                                          {new Date(borrowing.returnDate).toLocaleDateString()}
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
+                                  {borrowing.returnDate ? (
+                                    <Badge variant="outline" className="bg-green-50 border-green-200 text-green-600 dark:bg-green-900/30 dark:border-green-700 dark:text-green-400">
+                                      Returned
+                                    </Badge>
+                                  ) : new Date(borrowing.dueDate) < new Date() ? (
+                                    <Badge variant="destructive">Overdue</Badge>
+                                  ) : (
+                                    <Badge variant="outline">Active</Badge>
+                                  )}
                                 </div>
-                                {borrowing.returnDate ? (
-                                  <Badge variant="outline" className="bg-green-50 border-green-200 text-green-600 dark:bg-green-900/30 dark:border-green-700 dark:text-green-400">
-                                    Returned
-                                  </Badge>
-                                ) : new Date(borrowing.dueDate) < new Date() ? (
-                                  <Badge variant="destructive">Overdue</Badge>
-                                ) : (
-                                  <Badge variant="outline">Active</Badge>
-                                )}
-                              </div>
-                            ))}
-                            {borrowingHistory.length > 5 && (
-                              <div className="text-center pt-2">
-                                <Button variant="outline" size="sm">
-                                  <History className="h-4 w-4 mr-2" />
-                                  View All History
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                              ))}
+                              {borrowingHistory.length > 5 && (
+                                <div className="text-center pt-2">
+                                  <Button variant="outline" size="sm">
+                                    <History className="h-4 w-4 mr-2" />
+                                    View All History
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center">
-                          <History className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
-                          Book Ratings & Reviews
-                        </CardTitle>
-                        <CardDescription>
-                          Books you've rated and reviewed
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {isLoadingRatings ? (
-                          <div className="flex justify-center py-6">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          </div>
-                        ) : !bookRatings || bookRatings.length === 0 ? (
-                          <div className="text-center py-6">
-                            <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                            <p className="text-slate-500 dark:text-slate-400">
-                              You haven't rated any books yet
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {bookRatings.slice(0, 3).map((rating) => (
-                              <div key={rating.id} className="p-3 border rounded-md">
-                                <div className="flex justify-between">
-                                  <h4 className="font-medium">{rating.book?.title}</h4>
-                                  <div className="flex">
-                                    {Array.from({ length: 5 }).map((_, i) => (
-                                      <svg
-                                        key={i}
-                                        className={`h-4 w-4 ${
-                                          i < rating.rating
-                                            ? "text-yellow-400 fill-current"
-                                            : "text-gray-300 dark:text-gray-600"
-                                        }`}
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                      </svg>
-                                    ))}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center">
+                            <History className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
+                            Book Ratings & Reviews
+                          </CardTitle>
+                          <CardDescription>
+                            Books you've rated and reviewed
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          {isLoadingRatings ? (
+                            <div className="flex justify-center py-6">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                          ) : !bookRatings || bookRatings.length === 0 ? (
+                            <div className="text-center py-6">
+                              <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                              <p className="text-slate-500 dark:text-slate-400">
+                                You haven't rated any books yet
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {bookRatings.slice(0, 3).map((rating) => (
+                                <div key={rating.id} className="p-3 border rounded-md">
+                                  <div className="flex justify-between">
+                                    <h4 className="font-medium">{rating.book?.title}</h4>
+                                    <div className="flex">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <svg
+                                          key={i}
+                                          className={`h-4 w-4 ${
+                                            i < rating.rating
+                                              ? "text-yellow-400 fill-current"
+                                              : "text-gray-300 dark:text-gray-600"
+                                          }`}
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 20 20"
+                                          fill="currentColor"
+                                        >
+                                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {rating.comment && (
+                                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                                      "{rating.comment}"
+                                    </p>
+                                  )}
+                                  <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                    {new Date(rating.ratingDate).toLocaleDateString()}
                                   </div>
                                 </div>
-                                {rating.comment && (
-                                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                                    "{rating.comment}"
-                                  </p>
-                                )}
-                                <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                  {new Date(rating.ratingDate).toLocaleDateString()}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </motion.div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </motion.div>
+                )}
               </TabsContent>
             </Tabs>
           </div>

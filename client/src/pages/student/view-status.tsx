@@ -129,7 +129,7 @@ const ViewStatus = () => {
                   <CardFooter className="pt-0">
                     {currentBorrowings.length > 0 && (
                       <Button variant="outline" size="sm" className="w-full" asChild>
-                        <Link href="/student/return">
+                        <Link href="/User/return">
                           <RotateCcw className="h-4 w-4 mr-2" />
                           Return Books
                         </Link>
@@ -187,7 +187,7 @@ const ViewStatus = () => {
                   <CardFooter className="pt-0">
                     {upcomingDue && (
                       <Button variant="outline" size="sm" className="w-full" asChild>
-                        <Link href="/student/return">
+                        <Link href="/User/return">
                           <CalendarClock className="h-4 w-4 mr-2" />
                           Manage Due Dates
                         </Link>
@@ -270,7 +270,7 @@ const ViewStatus = () => {
                             className="mt-4"
                             asChild
                           >
-                            <Link href="/student/borrow">
+                            <Link href="/User/borrow">
                               <BookOpen className="h-4 w-4 mr-2" />
                               Browse Books
                             </Link>
@@ -324,7 +324,7 @@ const ViewStatus = () => {
                                       Renew
                                     </Button>
                                     <Button size="sm" variant="outline" asChild>
-                                      <Link href="/student/return">
+                                      <Link href="/User/return">
                                         <RotateCcw className="h-3 w-3 mr-2" />
                                         Return
                                       </Link>
@@ -439,7 +439,7 @@ const ViewStatus = () => {
                           className="mt-4"
                           asChild
                         >
-                          <Link href="/student/request">
+                          <Link href="/User/request">
                             <BookOpen className="h-4 w-4 mr-2" />
                             Request Books
                           </Link>

@@ -45,17 +45,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const isMobile = useMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Fetch notifications to show count
-  const notificationsQuery = useQuery({
-    queryKey: ["/api/notifications"],
-    enabled: !!user
-  });
-
-  // Count unread notifications
-  const unreadCount = (notificationsQuery.data && Array.isArray(notificationsQuery.data)) 
-    ? notificationsQuery.data.filter((n: any) => !n.read).length 
-    : 0;
-
   // Handle logout
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -120,7 +109,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         { label: "Home", icon: <Home className="h-5 w-5" />, href: dashboardUrl },
         { label: "Librarians", icon: <Users className="h-5 w-5" />, href: "/admin/librarians" },
         { label: "Reports", icon: <BarChart3 className="h-5 w-5" />, href: "/admin/reports" },
-        { label: "Notifications", icon: <Bell className="h-5 w-5" />, href: "#", badge: unreadCount },
         { label: "Profile", icon: <User className="h-5 w-5" />, href: "/profile" },
       ];
     } else if (user?.role === "librarian") {
@@ -302,11 +290,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               
               <Button variant="ghost" size="icon" className="relative text-gray-500 dark:text-gray-400">
                 <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-primary-500 dark:bg-primary-500">
-                    {unreadCount}
-                  </Badge>
-                )}
               </Button>
               
               <div className="hidden md:block">
@@ -350,11 +333,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               >
                 <div className="relative">
                   {item.icon}
-                  {item.badge && item.badge > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 bg-red-500 text-[10px]">
-                      {item.badge}
-                    </Badge>
-                  )}
                 </div>
                 <span className="text-xs mt-1">{item.label}</span>
               </Link>

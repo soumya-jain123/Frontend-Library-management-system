@@ -44,7 +44,7 @@ interface FormattedBorrowing extends Borrowing {
   estimatedFine: number;
 }
 
-const StudentReturnBooks = () => {
+const UserReturnBooks = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
@@ -61,7 +61,7 @@ const StudentReturnBooks = () => {
   // Return book mutation (this would actually be handled by a librarian in the real system)
   const returnBookMutation = useMutation({
     mutationFn: async ({ id, fine }: { id: number; fine: number }) => {
-      // Note: In a real system, students wouldn't be able to return books directly
+      // Note: In a real system, Users wouldn't be able to return books directly
       // This would be a request for the librarian to process the return
       const res = await apiRequest("POST", `/api/book-returns/request`, { 
         borrowingId: id,
@@ -245,7 +245,7 @@ const StudentReturnBooks = () => {
                     <Button 
                       variant="outline" 
                       className="mt-4"
-                      onClick={() => window.location.href = "/student/borrow"}
+                      onClick={() => window.location.href = "/User/borrow"}
                     >
                       <BookOpen className="h-4 w-4 mr-2" />
                       Borrow Books
@@ -454,4 +454,4 @@ const StudentReturnBooks = () => {
   );
 };
 
-export default StudentReturnBooks;
+export default UserReturnBooks;
