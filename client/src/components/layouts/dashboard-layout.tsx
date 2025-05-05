@@ -90,7 +90,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         ...commonItems,
         { label: "Borrow Books", icon: <BookOpen className="h-4 w-4 mr-3" />, href: "/student/borrow" },
         { label: "Return Books", icon: <RotateCcw className="h-4 w-4 mr-3" />, href: "/student/return" },
-        { label: "View Status", icon: <Clock className="h-4 w-4 mr-3" />, href: "/student/status" },
+        { label: "Borrowing and Renewal", icon: <Clock className="h-4 w-4 mr-3" />, href: "/student/status" },
         { label: "Request Books", icon: <PlusCircle className="h-4 w-4 mr-3" />, href: "/student/request" },
       ];
     }

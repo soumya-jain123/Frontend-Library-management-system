@@ -128,7 +128,16 @@ const BookForm: React.FC<BookFormProps> = ({
               <FormItem>
                 <FormLabel>Rating*</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" min={0} max={5} placeholder="Enter rating (e.g. 4.5)" {...field} />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={5}
+                    placeholder="Enter rating (e.g. 4.5)"
+                    {...field}
+                    value={field.value}
+                    onChange={e => field.onChange(parseFloat(e.target.value))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -141,7 +150,14 @@ const BookForm: React.FC<BookFormProps> = ({
               <FormItem>
                 <FormLabel>Number of Ratings*</FormLabel>
                 <FormControl>
-                  <Input type="number" min={0} placeholder="Enter number of ratings" {...field} />
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="Enter number of ratings"
+                    {...field}
+                    value={field.value}
+                    onChange={e => field.onChange(parseInt(e.target.value, 10))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -167,7 +183,14 @@ const BookForm: React.FC<BookFormProps> = ({
               <FormItem>
                 <FormLabel>Number of Books*</FormLabel>
                 <FormControl>
-                  <Input type="number" min={1} placeholder="Enter number of books" {...field} />
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder="Enter number of books"
+                    {...field}
+                    value={field.value}
+                    onChange={e => field.onChange(parseInt(e.target.value, 10))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

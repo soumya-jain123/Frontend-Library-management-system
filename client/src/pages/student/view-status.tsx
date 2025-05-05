@@ -90,7 +90,7 @@ const ViewStatus = () => {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Borrowing Status
+            Borrowing & Renewal
           </h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Track your current borrowings, requests, and library account status
@@ -103,7 +103,7 @@ const ViewStatus = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -139,7 +139,7 @@ const ViewStatus = () => {
                 </Card>
               </motion.div>
 
-              <motion.div
+              {/* <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
@@ -195,7 +195,7 @@ const ViewStatus = () => {
                     )}
                   </CardFooter>
                 </Card>
-              </motion.div>
+              </motion.div> */}
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -241,7 +241,7 @@ const ViewStatus = () => {
               <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="current">Current Borrowings</TabsTrigger>
                 <TabsTrigger value="history">Borrowing History</TabsTrigger>
-                <TabsTrigger value="requests">Requests</TabsTrigger>
+                <TabsTrigger value="requests">Renew Books</TabsTrigger>
               </TabsList>
 
               <TabsContent value="current">
@@ -421,9 +421,9 @@ const ViewStatus = () => {
               <TabsContent value="requests">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Book Requests</CardTitle>
+                    <CardTitle>Renew Books</CardTitle>
                     <CardDescription>
-                      Your book requests and holds
+                      Renew your books before they expire
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
