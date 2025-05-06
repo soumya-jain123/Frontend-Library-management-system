@@ -43,10 +43,55 @@ const BorrowBooks = () => {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isBorrowDialogOpen, setIsBorrowDialogOpen] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [isbnInput, setIsbnInput] = useState("");
+  const [isbnResult, setIsbnResult] = useState<Book | null | "notfound">();
   
-  // Fetch all books
-  const { data: books, isLoading: isLoadingBooks } = useQuery<Book[]>({
-    queryKey: ["/api/books"],
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No auth token found");
+    return {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+  };
+
+  const {
+    data: totalBooks,
+    isLoading: isLoadingTotal,
+    error: totalError,
+  } = useQuery<number>({
+    queryKey: ["/alluser/get-total-books"],
+    queryFn: () =>
+      fetch("http://127.0.0.1:8080/alluser/get-total-books", {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }).then(res => {
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        return res.json();
+      }),
+  });
+
+  // 2. Fetch all books once totalBooks is known, with auth
+  const {
+    data: books,
+    isLoading: isLoadingBooks,
+    error: booksError,
+  } = useQuery<Book[]>({
+    queryKey: ["/alluser/get-all-books", totalBooks],
+    queryFn: () =>
+      fetch(
+        `http://127.0.0.1:8080/alluser/get-all-books/10`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+        }
+      )
+        .then(res => {
+          if (!res.ok) throw new Error(`Error ${res.status}`);
+          // Spring Page<Book> has `.content` array
+          return res.json().then((page: { content: Book[] }) => page.content);
+        }),
+    enabled: typeof totalBooks === "number" && totalBooks > 0,
   });
 
   // Fetch books based on search term
@@ -57,26 +102,54 @@ const BorrowBooks = () => {
 
   // Borrow book mutation
   const borrowBookMutation = useMutation({
-    mutationFn: async (bookId: number) => {
-      const dueDate = calculateDueDate();
-      const res = await apiRequest("POST", "/api/borrowings", {
-        bookId,
-        userId: user?.id,
-        dueDate,
-      });
-      return await res.json();
+    mutationFn: async (isbn: number) => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No token found in localStorage");
+      }
+  
+      // Build the correct payload shape for your Spring endpoint
+      const payload = {
+        email: user?.email,  // Spring uses this to look up your User
+        isbn,                // Spring uses this to look up your Book
+      };
+  
+      const response = await fetch(
+        "http://127.0.0.1:8080/user/borrow-book",  // <-- your Spring @PostMapping path
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+  
+      if (!response.ok) {
+        // Throw so onError fires
+        const text = await response.text();
+        throw new Error(`Server error ${response.status}: ${text}`);
+      }
+  
+      // Returns the saved Borrow object with issueDate & dueDate set by the server
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (borrow: Borrow) => {
       toast({
         title: "Book borrowed successfully",
-        description: `You have borrowed "${selectedBook?.title}" and it is due back in 14 days.`,
+        description: `You have borrowed "${selectedBook?.title}"—due back on ${new Date(
+          borrow.dueDate
+        ).toLocaleDateString()}.`,
       });
       setIsBorrowDialogOpen(false);
       setSelectedBook(null);
-      
-      // Invalidate relevant queries
+  
+      // Refresh book list & your own borrowings
       queryClient.invalidateQueries({ queryKey: ["/api/books"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/borrowings/user/${user?.id}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/borrowings/user/${user?.id}`],
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -86,6 +159,8 @@ const BorrowBooks = () => {
       });
     },
   });
+  
+  
 
   // Handle book selection for borrowing
   const handleBorrowBook = (book: Book) => {
@@ -167,6 +242,15 @@ const BorrowBooks = () => {
   const categories = getCategories();
   const isLoading = isLoadingBooks || isSearching;
 
+  function handleCheckIsbn() {
+    if (!isbnInput) {
+      setIsbnResult(undefined);
+      return;
+    }
+    const found = filteredBooks.find(book => book.isbn === isbnInput);
+    setIsbnResult(found || "notfound");
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -204,14 +288,14 @@ const BorrowBooks = () => {
           <TabsList className="mb-6 overflow-x-auto flex w-full">
             <TabsTrigger value="all">All Books</TabsTrigger>
             <TabsTrigger value="available">Available</TabsTrigger>
-            {categories.map(category => (
+            {/* {categories.map(category => (
               <TabsTrigger key={category} value={category.toLowerCase()}>
                 {category}
               </TabsTrigger>
-            ))}
+            ))} */}
           </TabsList>
           
-          <TabsContent value={activeTab} className="mt-0">
+          <TabsContent value="all" className="mt-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -269,6 +353,41 @@ const BorrowBooks = () => {
                 </CardFooter>
               </Card>
             </motion.div>
+          </TabsContent>
+          <TabsContent value="available" className="mt-0">
+            <div className="max-w-md mx-auto p-6 bg-background rounded-lg shadow mb-6">
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Enter ISBN number..."
+                  value={isbnInput}
+                  onChange={e => setIsbnInput(e.target.value)}
+                  className="flex-1"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleCheckIsbn();
+                  }}
+                />
+                <Button
+                  onClick={handleCheckIsbn}
+                  variant="outline"
+                >
+                  <Search className="h-4 w-4 mr-1" /> Check
+                </Button>
+              </div>
+              {isbnResult === undefined && (
+                <div className="text-slate-500 text-center mt-4">Enter an ISBN to check availability.</div>
+              )}
+              {isbnResult === "notfound" && (
+                <div className="flex flex-col items-center text-slate-500 py-8">
+                  <BookPlus className="h-12 w-12 mb-2 text-slate-300" />
+                  Search for a book by ISBN: <span className="font-mono">{isbnInput}</span> 
+                </div>
+              )}
+              {isbnResult && isbnResult !== "notfound" && (
+                <div className="flex flex-col items-center gap-4 py-6">
+                  <BookCard book={isbnResult} onAction={handleBorrowBook} actionLabel="Borrow" />
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -343,7 +462,7 @@ const BorrowBooks = () => {
               <Button
                 onClick={() => {
                   if (selectedBook) {
-                    borrowBookMutation.mutate(selectedBook.id);
+                    borrowBookMutation.mutate(selectedBook.isbn);
                   }
                 }}
                 disabled={borrowBookMutation.isPending}

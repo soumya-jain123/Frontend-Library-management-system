@@ -38,6 +38,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import QRScanner from "@/components/ui/qr-scanner";
 import BookTable from "@/components/book/book-table";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 interface Borrowing {
   id: number;
@@ -61,6 +72,13 @@ interface Borrowing {
   };
 }
 
+const returnBookSchema = z.object({
+  email: z.string().email({ message: "Valid email is required" }),
+  isbn: z.string().min(1, { message: "ISBN is required" }),
+});
+
+type ReturnBookFormValues = z.infer<typeof returnBookSchema>;
+
 const ReturnBooks = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,6 +87,14 @@ const ReturnBooks = () => {
   const [fineAmount, setFineAmount] = useState("0");
   const [activeTab, setActiveTab] = useState("borrowed");
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+
+  const form = useForm<ReturnBookFormValues>({
+    resolver: zodResolver(returnBookSchema),
+    defaultValues: {
+      email: "",
+      isbn: "",
+    },
+  });
 
   // Fetch active borrowings
   const { data: activeBorrowings, isLoading: isLoadingActive } = useQuery<Borrowing[]>({
@@ -89,22 +115,41 @@ const ReturnBooks = () => {
       borrowing.book.isbn.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No auth token found");
+    return {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+  };
   // Return book mutation
   const returnBookMutation = useMutation({
-    mutationFn: async ({ id, fine }: { id: number; fine: number }) => {
-      const res = await apiRequest("POST", `/api/borrowings/${id}/return`, { fine });
-      return await res.json();
+    mutationFn: async (data: ReturnBookFormValues) => {
+        // data must include: { borrowId: number }
+        const response = await fetch(
+          "http://127.0.0.1:8080/librarian/return-book",
+          {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ email: data.email, isbn: data.isbn }),
+          }
+        );
+    
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`Error ${response.status}: ${text}`);
+        }
+    
+        // Returns the updated Borrow record with returnDate set
+        return response.json() as Promise<Borrow>;
     },
     onSuccess: () => {
       toast({
         title: "Book returned successfully",
-        description: "The book has been marked as returned in the system.",
+        description: `The book has been marked as returned in the system.`,
       });
-      setReturnDialogOpen(false);
-      setSelectedBorrowing(null);
-      setFineAmount("0");
-      
-      // Invalidate relevant queries
+      form.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/borrowings/active"] });
       queryClient.invalidateQueries({ queryKey: ["/api/borrowings/overdue"] });
     },
@@ -116,6 +161,8 @@ const ReturnBooks = () => {
       });
     },
   });
+
+  console.log("activeBorrowings", activeBorrowings);
 
   // Calculate fine based on days overdue
   const calculateFine = (dueDate: string): number => {
@@ -221,6 +268,11 @@ const ReturnBooks = () => {
 
   const isLoading = isLoadingActive || isLoadingOverdue;
 
+  // Handle form submission
+  const onSubmit = (data: ReturnBookFormValues) => {
+    returnBookMutation.mutate(data);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -229,221 +281,50 @@ const ReturnBooks = () => {
             Return Books
           </h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Process book returns and handle fines
+            Return books using Email and ISBN
           </p>
         </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex-1">
-              <TabsList>
-                <TabsTrigger value="borrowed">All Borrowed</TabsTrigger>
-                <TabsTrigger value="overdue">Overdue</TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="relative max-w-xs">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  className="pl-10"
-                  placeholder="Search borrowings..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+        <Card className="max-w-lg mx-auto">
+          <CardHeader>
+            <CardTitle>Return Book</CardTitle>
+            <CardDescription>Enter the student's email and the book's ISBN to return a book.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Student Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter student email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <Button variant="outline" onClick={() => setIsQrScannerOpen(true)}>
-                <QrCode className="h-4 w-4 mr-2" />
-                Scan QR
-              </Button>
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {activeTab === "borrowed" ? "Currently Borrowed Books" : "Overdue Books"}
-                </CardTitle>
-                <CardDescription>
-                  {activeTab === "borrowed"
-                    ? "All books currently checked out by students"
-                    : "Books that are past their due date and may incur fines"}
-                </CardDescription>
-              </CardHeader>
-              
-              <TabsContent value="borrowed">
-                <CardContent>
-                  <BookTable
-                    books={formatBorrowingsForTable(filteredBorrowings)}
-                    type="borrowed"
-                    onRenew={handleRenew}
-                    onReturn={(id) => {
-                      const borrowing = activeBorrowings?.find(b => b.id === id);
-                      if (borrowing) handleReturn(borrowing);
-                    }}
-                    isLoading={isLoading}
-                  />
-                </CardContent>
-                <CardFooter className="bg-slate-50 dark:bg-slate-800/50 border-t">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">
-                    Showing {filteredBorrowings?.length || 0} of {activeBorrowings?.length || 0} borrowed books
-                  </div>
-                </CardFooter>
-              </TabsContent>
-              
-              <TabsContent value="overdue">
-                <CardContent>
-                  <BookTable
-                    books={formatBorrowingsForTable(filteredBorrowings)}
-                    type="overdue"
-                    onRenew={handleRenew}
-                    onReturn={(id) => {
-                      const borrowing = overdueBorrowings?.find(b => b.id === id);
-                      if (borrowing) handleReturn(borrowing);
-                    }}
-                    isLoading={isLoading}
-                  />
-                </CardContent>
-                <CardFooter className="bg-slate-50 dark:bg-slate-800/50 border-t">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">
-                    Showing {filteredBorrowings?.length || 0} of {overdueBorrowings?.length || 0} overdue books
-                  </div>
-                </CardFooter>
-              </TabsContent>
-            </Card>
-          </motion.div>
-        </Tabs>
-
-        {/* Return Dialog */}
-        <Dialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Return Book</DialogTitle>
-              <DialogDescription>
-                Process the return of the book and calculate any applicable fines.
-              </DialogDescription>
-            </DialogHeader>
-
-            {selectedBorrowing && (
-              <div className="space-y-4">
-                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="h-12 w-12 bg-primary-100 dark:bg-primary-800 rounded-lg flex items-center justify-center text-primary-600 dark:text-primary-400">
-                      <RotateCcw className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{selectedBorrowing.book.title}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {selectedBorrowing.book.author}
-                      </p>
-                      <div className="mt-1 text-xs">
-                        <span className="font-medium">Borrowed by:</span>{" "}
-                        {selectedBorrowing.user.name}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 border rounded-lg">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      Borrow Date
-                    </div>
-                    <div className="flex items-center mt-1">
-                      <Clock className="h-4 w-4 mr-1 text-blue-500" />
-                      <span className="font-medium">
-                        {new Date(selectedBorrowing.borrowDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 border rounded-lg">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      Due Date
-                    </div>
-                    <div className="flex items-center mt-1">
-                      {new Date(selectedBorrowing.dueDate) < new Date() ? (
-                        <AlertTriangle className="h-4 w-4 mr-1 text-red-500" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-                      )}
-                      <span className="font-medium">
-                        {new Date(selectedBorrowing.dueDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Fine Amount ($)
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="pl-10"
-                      value={fineAmount}
-                      onChange={(e) => setFineAmount(e.target.value)}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    {Number(fineAmount) > 0
-                      ? "Fine will be recorded and the student will be notified."
-                      : "No fine will be charged for this return."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setReturnDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedBorrowing) {
-                    returnBookMutation.mutate({
-                      id: selectedBorrowing.id,
-                      fine: Number(fineAmount),
-                    });
-                  }
-                }}
-                disabled={returnBookMutation.isPending}
-              >
-                {returnBookMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Confirm Return
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* QR Scanner */}
-        <QRScanner
-          isOpen={isQrScannerOpen}
-          onClose={() => setIsQrScannerOpen(false)}
-          onScan={handleQrScan}
-        />
+                <FormField
+                  control={form.control}
+                  name="isbn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Book ISBN</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter book ISBN" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" loading={returnBookMutation.isPending}>
+                  Return Book
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

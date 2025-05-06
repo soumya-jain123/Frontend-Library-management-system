@@ -28,8 +28,21 @@ interface BookFormProps {
   isSubmitting?: boolean;
 }
 
-// Use the new insertBookSchema directly for validation
-export type BookFormValues = z.infer<typeof insertBookSchema>;
+// Use the new insertBookSchema directly for validation, but make all fields required
+const bookFormSchema = z.object({
+  isbn: z.string().min(1, 'ISBN is required'),
+  title: z.string().min(1, 'Title is required'),
+  author: z.string().min(1, 'Author is required'),
+  bookFormat: z.string().min(1, 'Book format is required'),
+  description: z.string().optional(),
+  imageLink: z.string().min(1, 'Cover image URL is required'),
+  rating: z.number({ required_error: 'Rating is required' }),
+  numRatings: z.number({ required_error: 'Number of ratings is required' }),
+  genres: z.string().min(1, 'Genres are required'),
+  numBooks: z.number({ required_error: 'Number of books is required' }),
+});
+
+export type BookFormValues = z.infer<typeof bookFormSchema>;
 
 const BookForm: React.FC<BookFormProps> = ({
   onSubmit,
@@ -37,7 +50,7 @@ const BookForm: React.FC<BookFormProps> = ({
   isSubmitting = false,
 }) => {
   const form = useForm<BookFormValues>({
-    resolver: zodResolver(insertBookSchema),
+    resolver: zodResolver(bookFormSchema),
     defaultValues: {
       isbn: defaultValues?.isbn || "",
       title: defaultValues?.title || "",

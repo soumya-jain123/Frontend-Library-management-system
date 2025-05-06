@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import DashboardLayout from "@/components/layouts/dashboard-layout";
-import { Book } from "@shared/schema";
+import { Book } from "@/lib/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -28,7 +28,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, Search, BookOpen, CheckCircle2, AlertTriangle, BookKey } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const ManageBooks = () => {
   const { toast } = useToast();
@@ -36,6 +37,9 @@ const ManageBooks = () => {
   const [bookToEdit, setBookToEdit] = useState<Book | null>(null);
   const [bookToDelete, setBookToDelete] = useState<number | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isbnInput, setIsbnInput] = useState("");
+  const [isbnError, setIsbnError] = useState("");
+  const [isbnResult, setIsbnResult] = useState<Book | null | "notfound">();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -86,8 +90,9 @@ const ManageBooks = () => {
   const createBookMutation = useMutation({
     mutationFn: async (bookData: BookFormValues) => {
       const token = localStorage.getItem("authToken");
+      // console.log("Token:", token);
       if (!token) throw new Error("No auth token found");
-  
+      console.log("Adding book with data:", bookData);
       const payload = {
         isbn: bookData.isbn,
         title: bookData.title,
@@ -98,8 +103,10 @@ const ManageBooks = () => {
         rating: parseFloat(bookData.rating),
         numRatings: parseInt(bookData.numRatings),
         genres: bookData.genres, // if this is a comma-separated string, leave as-is
-        numBooks: parseInt(bookData.quantity), // assuming this maps to quantity in the form
+        numBooks: bookData.numBooks, // assuming this maps to quantity in the form
       };
+
+      // console.log("Payload:", payload); // Log the payload for debugging
   
       const res = await fetch("http://127.0.0.1:8080/librarian/add-book", {
         method: "POST",
@@ -109,8 +116,10 @@ const ManageBooks = () => {
         },
         body: JSON.stringify(payload),
       });
+
+      // console.log("Response:", res); // Log the response for debugging
   
-      if (!res.ok) {
+      if (res.status !== 200) {
         const error = await res.text();
         throw new Error(`Failed to add book: ${error}`);
       }
@@ -139,9 +148,39 @@ const ManageBooks = () => {
 
   // Update book mutation
   const updateBookMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: BookFormValues }) => {
-      const res = await apiRequest("PUT", `/api/books/${id}`, data);
-      return await res.json();
+    mutationFn: async ({ id, data }: { id: string; data: BookFormValues }) => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No auth token found");
+      console.log("Adding book with data:", data);
+      const payload = {
+        isbn: data.isbn,
+        title: data.title,
+        author: data.author,
+        bookFormat: data.bookFormat,
+        description: data.description || null,
+        imageLink: data.imageLink,
+        rating: parseFloat(data.rating),
+        numRatings: parseInt(data.numRatings),
+        genres: data.genres, // if this is a comma-separated string, leave as-is
+        numBooks: data.numBooks, // assuming this maps to quantity in the form
+      };
+
+      let url = `http://localhost:8080/librarian/update-book/${data.isbn}`;
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.status !== 200) {
+        const errorText = await res.text();
+        throw new Error(`Update failed: ${errorText}`);
+      }
+  
+      return await res.json(); // This returns the updated book object
     },
     onSuccess: () => {
       toast({
@@ -149,7 +188,7 @@ const ManageBooks = () => {
         description: "The book has been updated successfully.",
       });
       setBookToEdit(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] }); // Consider updating to match new route if needed
     },
     onError: (error: Error) => {
       toast({
@@ -159,6 +198,29 @@ const ManageBooks = () => {
       });
     },
   });
+  
+  
+  // const updateBookMutation = useMutation({
+  //   mutationFn: async ({ id, data }: { id: number; data: BookFormValues }) => {
+  //     const res = await apiRequest("PUT", `/api/books/${id}`, data);
+  //     return await res.json();
+  //   },
+  //   onSuccess: () => {
+  //     toast({
+  //       title: "Book updated",
+  //       description: "The book has been updated successfully.",
+  //     });
+  //     setBookToEdit(null);
+  //     queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+  //   },
+  //   onError: (error: Error) => {
+  //     toast({
+  //       title: "Failed to update book",
+  //       description: error.message,
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
 
   // Delete book mutation
   // const deleteBookMutation = useMutation({
@@ -222,7 +284,7 @@ const ManageBooks = () => {
       });
       setBookToDelete(null);
       queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // Use the key you're using for books query
-      queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // Use the key you're using for books query
+      // queryClient.invalidateQueries({ queryKey: ["/alluser/get-books"] }); // Use the key you're using for books query
     },
     onError: (error: Error) => {
       toast({
@@ -235,6 +297,7 @@ const ManageBooks = () => {
 
   // Handle adding a new book
   const handleAddBook = (data: BookFormValues) => {
+    // console.log("Adding book with data:", data);
     createBookMutation.mutate(data);
   };
 
@@ -251,6 +314,15 @@ const ManageBooks = () => {
       deleteBookMutation.mutate(bookToDelete);
     }
   };
+
+  function handleCheckIsbn() {
+    if (!isbnInput.trim()) {
+      setIsbnResult(undefined);
+      return;
+    }
+    const found = (books || []).find(b => b.isbn && b.isbn.toLowerCase() === isbnInput.trim().toLowerCase());
+    setIsbnResult(found || "notfound");
+  }
 
   return (
     <DashboardLayout>
@@ -317,28 +389,80 @@ const ManageBooks = () => {
             >
               <TabsContent value="all" className="mt-0">
                 <BookTable
-                  books={displayedBooks.map((book) => ({
-                    ...book,
-                  }))}
+                  books={displayedBooks.map((book) => {
+                    // console.log("Book being mapped:", book); // 🔍 Debug log
+                    return {
+                      ...book,
+                      id: book.isbn, // <-- Add id for compatibility
+                    };
+                  })}
                   type="all"
                   onEdit={(book) => setBookToEdit(book as Book)}
-                  onDelete={(id) => setBookToDelete(id)}
+                  onDelete={(isbn) => {
+                    // console.log("Deleting book:", isbn); // Debug: log the book object
+                    setBookToDelete(isbn);
+                  }}
                   isLoading={isLoading || isSearching}
                 />
               </TabsContent>
 
               <TabsContent value="available" className="mt-0">
-                <BookTable
-                  books={displayedBooks
-                    .filter((book) => book.available > 0)
-                    .map((book) => ({
-                      ...book,
-                    }))}
-                  type="all"
-                  onEdit={(book) => setBookToEdit(book as Book)}
-                  onDelete={(id) => setBookToDelete(id)}
-                  isLoading={isLoading || isSearching}
-                />
+                <div className="max-w-md mx-auto p-6 bg-background rounded-lg shadow">
+                  <div className="mb-4 flex items-center gap-2">
+                    <Input
+                      placeholder="Enter ISBN number..."
+                      value={isbnInput}
+                      onChange={e => {
+                        const value = e.target.value;
+                        if (/\D/.test(value)) {
+                          setIsbnError("Sorry, only integers accepted.");
+                        } else {
+                          setIsbnError("");
+                        }
+                        setIsbnInput(value);
+                      }}
+                      className="flex-1"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleCheckIsbn();
+                      }}
+                    />
+                    {isbnError && (
+                      <div className="text-red-500 text-sm mt-1">{isbnError}</div>
+                    )}
+                    <Button onClick={handleCheckIsbn} variant="outline">
+                      <Search className="h-4 w-4 mr-1" /> Check
+                    </Button>
+                  </div>
+                  {isbnResult === undefined && (
+                    <div className="text-slate-500 text-center">Enter an ISBN to check availability.</div>
+                  )}
+                  {isbnResult === "notfound" && (
+                    <div className="flex flex-col items-center text-slate-500 py-8">
+                      <AlertTriangle className="h-8 w-8 mb-2 text-yellow-500" />
+                      Book not found for ISBN: <span className="font-mono">{isbnInput}</span>
+                    </div>
+                  )}
+                  {isbnResult && isbnResult !== "notfound" && (
+                    <div className="flex flex-col items-center gap-4 py-6">
+                      <div className="flex items-center gap-3">
+                        <BookOpen className="h-8 w-8 text-primary-600" />
+                        <div>
+                          <div className="font-bold text-lg">{isbnResult.title}</div>
+                          <div className="text-slate-500">{isbnResult.author}</div>
+                          <div className="text-xs mt-1">ISBN: <span className="font-mono">{isbnResult.isbn}</span></div>
+                          <div className="text-xs mt-1">Category: {isbnResult.category}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        {isbnResult.available && isbnResult.available > 0 ? (
+                          <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="h-5 w-5" /> Available ({isbnResult.available} of {isbnResult.quantity})</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-red-600"><AlertTriangle className="h-5 w-5" /> Not Available</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               {/* <TabsContent value="borrowed" className="mt-0">
