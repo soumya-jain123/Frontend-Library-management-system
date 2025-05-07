@@ -31,7 +31,6 @@ const LibrarianDashboard = () => {
     enabled: true,
     queryFn: async () => {
       try {
-        console.log("Fetching books..."); // Debugging line
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("No authorization token found");
         console.log("Fetching books with token:", token); // Debugging line
@@ -130,6 +129,9 @@ const LibrarianDashboard = () => {
       const text = await res.text();
       throw new Error(`Error ${res.status}: ${text}`);
     }
+
+    console.log("Overdue books response:", res); // Debugging line
+
     return res.json();
   }
 
@@ -249,7 +251,7 @@ const LibrarianDashboard = () => {
                       <div>
                         <p className="text-sm font-medium">{borrowing.book?.title}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Borrowed by: {borrowing.user?.name} • 
+                          Borrowed by: {borrowing.user} • 
                           Due: {new Date(borrowing.dueDate).toLocaleDateString()}
                         </p>
                       </div>

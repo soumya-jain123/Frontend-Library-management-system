@@ -63,8 +63,8 @@ const BookTable: React.FC<BookTableProps> = ({
   const filteredBooks = books.filter((book) => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      book.title.toLowerCase().includes(searchLower) ||
-      book.author.toLowerCase().includes(searchLower) ||
+      // book.borrowId.toLowerCase().includes(searchLower) ||
+      // book.author.toLowerCase().includes(searchLower) ||
       (book.isbn && book.isbn.toLowerCase().includes(searchLower)) ||
       (book.category && book.category.toLowerCase().includes(searchLower)) ||
       (book.borrower && book.borrower.toLowerCase().includes(searchLower))
@@ -307,6 +307,15 @@ const BookTable: React.FC<BookTableProps> = ({
                               onClick={() => onDelete(book.id)}
                             >
                               Delete
+                            </Button>
+                          )}
+                          {onReturn && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onReturn(book.id)}
+                            >
+                              Return
                             </Button>
                           )}
                         </div>

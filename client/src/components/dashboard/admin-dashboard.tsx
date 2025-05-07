@@ -92,18 +92,11 @@ const AdminDashboard = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await response.json();
-  
-      if (!response.ok || data.statusCode !== 200) {
-        throw new Error(data.message || "Failed to fetch librarians");
-      }
-  
-      return data.userList;
+      
+      return data;
     },
   });
-
-  console.log("Fine Data : " + fineData);
 
   // Fetch book requests
   const { data: bookRequests } = useQuery({
@@ -144,7 +137,7 @@ const AdminDashboard = () => {
         
         <StatsCard 
           title="Monthly Fines"
-          value={`$${fineData?.totalFines || 0}`}
+          value={`$${fineData || 0}`}
           icon={<BarChart3 className="h-5 w-5" />}
           description="Revenue from fines"
           className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
