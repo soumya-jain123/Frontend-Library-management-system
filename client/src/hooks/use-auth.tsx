@@ -53,6 +53,7 @@ const loginApi = async (data: LoginData): Promise<User> => {
 
   const result = await response.json();
 
+  // console.log("Login result:", result);
   if (!response.ok || result.statusCode !== 200) {
     throw new Error(result.message || 'Login failed');
   }
@@ -60,6 +61,7 @@ const loginApi = async (data: LoginData): Promise<User> => {
   // Save tokens
   localStorage.setItem("authToken", result.token);
   localStorage.setItem("refreshToken", result.refreshToken);
+
 
   return {
     id: result.user?.id || 1,

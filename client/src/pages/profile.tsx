@@ -224,7 +224,7 @@ const Profile = () => {
               <TabsList className="mb-4">
                 <TabsTrigger value="profile">Profile Settings</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
-                {user?.role !== "admin" && (
+                {user?.role !== "admin" && false && (
                   <TabsTrigger value="activity">Library Activity</TabsTrigger>
                 )}
               </TabsList>
@@ -377,8 +377,8 @@ const Profile = () => {
                 </motion.div>
               </TabsContent>
 
-              <TabsContent value="activity">
-                {user?.role !== "admin" && (
+              {user?.role !== "admin" && false && (
+                <TabsContent value="activity">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -514,8 +514,8 @@ const Profile = () => {
                       </Card>
                     </div>
                   </motion.div>
-                )}
               </TabsContent>
+              )}
             </Tabs>
           </div>
         </div>

@@ -1,225 +1,240 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import DashboardLayout from "@/components/layouts/dashboard-layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Book } from "@/lib/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { motion } from "framer-motion";
+import BookTable from "@/components/book/book-table";
+import BookForm, { BookFormValues } from "@/components/book/book-form";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { motion } from "framer-motion";
-import { 
-  Search, QrCode, RotateCcw, Clock, AlertTriangle, 
-  CheckCircle, DollarSign, Loader2 
-} from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import QRScanner from "@/components/ui/qr-scanner";
-import BookTable from "@/components/book/book-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlusCircle, Trash2, Loader2, Search, BookOpen, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
-interface Borrowing {
-  id: number;
-  bookId: number;
-  userId: number;
-  borrowDate: string;
-  dueDate: string;
-  returnDate: string | null;
-  fine: number;
-  status: string;
-  book: {
-    id: number;
-    title: string;
-    author: string;
-    isbn: string;
-  };
-  user: {
-    id: number;
-    name: string;
-    username: string;
-  };
-}
-
-const ReturnBooks = () => {
+const ManageBooks = () => {
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBorrowing, setSelectedBorrowing] = useState<Borrowing | null>(null);
-  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
-  const [fineAmount, setFineAmount] = useState("0");
-  const [activeTab, setActiveTab] = useState("borrowed");
-  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const { user } = useAuth();
+  const [bookToEdit, setBookToEdit] = useState<Book | null>(null);
+  const [bookToDelete, setBookToDelete] = useState<number | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isbnInput, setIsbnInput] = useState("");
+  const [isbnResult, setIsbnResult] = useState<Book | null | "notfound">();
+  const [isbnError, setIsbnError] = useState("");
+  const [bookToReturn, setBookToReturn] = useState<Book | null>(null);
 
-  // Fetch active borrowings
-  const { data: activeBorrowings, isLoading: isLoadingActive } = useQuery<Borrowing[]>({
-    queryKey: ["/api/borrowings/active"],
+  // Fetch all books
+  // const { data: books, isLoading } = useQuery<Book[]>({
+  //   queryKey: ["/api/books"],
+  // });
+  interface Borrow {
+    borrowId: number;
+    email: string;
+    // plus any other fields your endpoint might return…
+  }
+  
+  /**
+   * Calls the librarian return-book API with Bearer token auth.
+   */
+  async function returnBookLibrarian(
+    borrowId: number,
+    userEmail: string
+  ): Promise<Borrow> {
+    // 1. Get the token
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      throw new Error("No auth token found – please log in first");
+    }
+  
+    // 2. Call the API
+    const response = await fetch(
+      "http://127.0.0.1:8080/librarian/return-book",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,    // <-- Bearer token here
+          "Content-Type":  "application/json",
+        },
+        body: JSON.stringify({ borrowId : borrowId, email: userEmail }),
+      }
+    );
+  
+    // 3. Error handling
+    console.log("Response:", borrowId, userEmail, response);
+    if (!response.ok) {
+      const text = await response.text();
+      // throw new Error(`Server error ${response.status}: ${text}`);
+    }
+  
+    // 4. Parse and return the updated Borrow object
+    // return Text;
+  }
+
+
+
+  // Fetching books using useQuery
+  const { data: books, isLoading } = useQuery({
+    queryKey: ['librarian/get-issued-books'], // Query key
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No token found in localStorage");
+      }
+  
+      const response = await fetch('http://127.0.0.1:8080/librarian/get-issued-books', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+  
+      const data = await response.json();
+      console.log('Fetched books:', data); // Log the fetched books
+      return data; // Assuming the response contains the list of books
+    },
   });
 
-  // Fetch overdue borrowings
-  const { data: overdueBorrowings, isLoading: isLoadingOverdue } = useQuery<Borrowing[]>({
-    queryKey: ["/api/borrowings/overdue"],
+  console.log(books); // Log the fetched books to the console
+
+  // Search books when query changes
+  const { data: searchResults, isLoading: isSearching } = useQuery<Book[]>({
+    queryKey: ["/api/books/search", searchQuery],
+    enabled: searchQuery.length > 0,
   });
 
-  // Filter borrowings based on search term and active tab
-  const filteredBorrowings = (activeTab === "borrowed" ? activeBorrowings : overdueBorrowings)?.filter(
-    borrowing =>
-      borrowing.book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      borrowing.book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      borrowing.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      borrowing.book.isbn.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Books to display based on search or all books
+  const displayedBooks = useMemo(() => {
+    let list = books || [];
+    // Add a dummy borrowed book for testing
+    if (searchQuery && searchResults) {
+      return searchResults;
+    }
+    return list;
+  }, [books, searchQuery, searchResults]);
 
-  // Return book mutation
-  const returnBookMutation = useMutation({
-    mutationFn: async ({ id, fine }: { id: number; fine: number }) => {
-      const res = await apiRequest("POST", `/api/borrowings/${id}/return`, { fine });
+  // Create book mutation
+  const createBookMutation = useMutation({
+    mutationFn: async (bookData: BookFormValues) => {
+      const res = await apiRequest("POST", "/api/books", {
+        ...bookData,
+        addedBy: user?.id,
+      });
       return await res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Book returned successfully",
-        description: "The book has been marked as returned in the system.",
+        title: "Book added",
+        description: "The book has been added successfully.",
       });
-      setReturnDialogOpen(false);
-      setSelectedBorrowing(null);
-      setFineAmount("0");
-      
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["/api/borrowings/active"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/borrowings/overdue"] });
+      setIsAddDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to return book",
+        title: "Failed to add book",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  // Calculate fine based on days overdue
-  const calculateFine = (dueDate: string): number => {
-    const due = new Date(dueDate);
-    const today = new Date();
-    
-    // If not overdue, no fine
-    if (due >= today) return 0;
-    
-    // Calculate days overdue
-    const diffTime = Math.abs(today.getTime() - due.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    // $0.50 per day
-    return diffDays * 0.5;
-  };
-
-  // Handle return action
-  const handleReturn = (borrowing: Borrowing) => {
-    const calculatedFine = calculateFine(borrowing.dueDate);
-    setSelectedBorrowing(borrowing);
-    setFineAmount(calculatedFine.toString());
-    setReturnDialogOpen(true);
-  };
-
-  // Handle renew action (extend due date by 7 days)
-  const handleRenew = (borrowingId: number) => {
-    // This would be implemented in a real application to extend the due date
-    toast({
-      title: "Renew functionality",
-      description: "Renew functionality would be implemented here to extend the due date.",
-    });
-  };
-
-  // Handle QR code scanning
-  const handleQrScan = (data: string) => {
-    try {
-      const scannedData = JSON.parse(data);
-      
-      if (scannedData.type === "borrowing") {
-        const borrowingId = parseInt(scannedData.id);
-        
-        // Find the borrowing in our active or overdue lists
-        const borrowing = [...(activeBorrowings || []), ...(overdueBorrowings || [])]
-          .find(b => b.id === borrowingId);
-          
-        if (borrowing) {
-          handleReturn(borrowing);
-        } else {
-          toast({
-            title: "Borrowing not found",
-            description: "Could not find an active borrowing with this ID",
-            variant: "destructive",
-          });
-        }
-      } else if (scannedData.type === "book") {
-        const bookId = parseInt(scannedData.id);
-        
-        // Find borrowings for this book
-        const borrowing = [...(activeBorrowings || []), ...(overdueBorrowings || [])]
-          .find(b => b.bookId === bookId);
-          
-        if (borrowing) {
-          handleReturn(borrowing);
-        } else {
-          toast({
-            title: "Active borrowing not found",
-            description: "Could not find an active borrowing for this book",
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Invalid QR code",
-          description: "The scanned QR code is not valid for returning books",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
+  // Update book mutation
+  const updateBookMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: BookFormValues }) => {
+      const res = await apiRequest("PUT", `/api/books/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
       toast({
-        title: "Invalid QR code",
-        description: "The scanned QR code could not be parsed",
+        title: "Book updated",
+        description: "The book has been updated successfully.",
+      });
+      setBookToEdit(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update book",
+        description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  // Delete book mutation
+  const deleteBookMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/books/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Book deleted",
+        description: "The book has been deleted successfully.",
+      });
+      setBookToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete book",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle adding a new book
+  const handleAddBook = (data: BookFormValues) => {
+    createBookMutation.mutate(data);
+  };
+
+  // Handle updating a book
+  const handleUpdateBook = (data: BookFormValues) => {
+    if (bookToEdit) {
+      updateBookMutation.mutate({ id: bookToEdit.id, data });
     }
-    
-    setIsQrScannerOpen(false);
   };
 
-  // Format borrowings for table display
-  const formatBorrowingsForTable = (borrowings: Borrowing[] | undefined) => {
-    if (!borrowings) return [];
-    
-    return borrowings.map(borrowing => ({
-      id: borrowing.id,
-      title: borrowing.book.title,
-      author: borrowing.book.author,
-      borrower: borrowing.user.name,
-      dueDate: new Date(borrowing.dueDate),
-      isOverdue: new Date(borrowing.dueDate) < new Date()
-    }));
+  // Handle deleting a book
+  const handleDeleteBook = () => {
+    if (bookToDelete !== null) {
+      deleteBookMutation.mutate(bookToDelete);
+    }
   };
 
-  const isLoading = isLoadingActive || isLoadingOverdue;
+  function handleCheckIsbn() {
+    if (!isbnInput.trim() || isbnError) {
+      return;
+    }
+    const found = (books || []).find(b => b.isbn && b.isbn === isbnInput.trim());
+    setIsbnResult(found || "notfound");
+  }
+
+  const handleReturn = (id: number) => {
+    const book = displayedBooks.find(b => b.id === id);
+    setBookToReturn(book || null);
+  };
 
   return (
     <DashboardLayout>
@@ -229,224 +244,244 @@ const ReturnBooks = () => {
             Return Books
           </h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Process book returns and handle fines
+            Return books for the user if they are not returned
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex-1">
-              <TabsList>
-                <TabsTrigger value="borrowed">All Borrowed</TabsTrigger>
-                <TabsTrigger value="overdue">Overdue</TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="relative max-w-xs">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  className="pl-10"
-                  placeholder="Search borrowings..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+          {/* Add Book Button at the top
+          <div className="flex justify-end mb-4">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Book
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Book</DialogTitle>
+                  <DialogDescription>
+                    Add a new book to the library collection. Fill in the details
+                    below.
+                  </DialogDescription>
+                </DialogHeader>
+                <BookForm
+                  onSubmit={handleAddBook}
+                  isSubmitting={createBookMutation.isPending}
                 />
-              </div>
-              
-              <Button variant="outline" onClick={() => setIsQrScannerOpen(true)}>
-                <QrCode className="h-4 w-4 mr-2" />
-                Scan QR
-              </Button>
-            </div>
-          </div>
+              </DialogContent>
+            </Dialog>
+          </div> */}
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {activeTab === "borrowed" ? "Currently Borrowed Books" : "Overdue Books"}
-                </CardTitle>
-                <CardDescription>
-                  {activeTab === "borrowed"
-                    ? "All books currently checked out by students"
-                    : "Books that are past their due date and may incur fines"}
-                </CardDescription>
-              </CardHeader>
-              
-              <TabsContent value="borrowed">
-                <CardContent>
-                  <BookTable
-                    books={formatBorrowingsForTable(filteredBorrowings)}
-                    type="borrowed"
-                    onRenew={handleRenew}
-                    onReturn={(id) => {
-                      const borrowing = activeBorrowings?.find(b => b.id === id);
-                      if (borrowing) handleReturn(borrowing);
-                    }}
-                    isLoading={isLoading}
-                  />
-                </CardContent>
-                <CardFooter className="bg-slate-50 dark:bg-slate-800/50 border-t">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">
-                    Showing {filteredBorrowings?.length || 0} of {activeBorrowings?.length || 0} borrowed books
-                  </div>
-                </CardFooter>
+        {/* Search Bar */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search books..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 border rounded-md bg-background text-foreground"
+          />
+        </div>
+
+        {/* Tabs and Book Table */}
+        <div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="all">All Books</TabsTrigger>
+              {/* <TabsTrigger value="available">Check-Availability</TabsTrigger> */}
+              {/* <TabsTrigger value="borrowed">Borrowed</TabsTrigger> */}
+            </TabsList>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full mt-4"
+            >
+              <TabsContent value="all" className="mt-0">
+              <BookTable
+                  books={displayedBooks.map((book) => ({ ...book }))}
+                  type="all"
+                  onReturn={handleReturn}
+                  isLoading={isLoading || isSearching}
+                />
               </TabsContent>
-              
-              <TabsContent value="overdue">
-                <CardContent>
-                  <BookTable
-                    books={formatBorrowingsForTable(filteredBorrowings)}
-                    type="overdue"
-                    onRenew={handleRenew}
-                    onReturn={(id) => {
-                      const borrowing = overdueBorrowings?.find(b => b.id === id);
-                      if (borrowing) handleReturn(borrowing);
-                    }}
-                    isLoading={isLoading}
-                  />
-                </CardContent>
-                <CardFooter className="bg-slate-50 dark:bg-slate-800/50 border-t">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">
-                    Showing {filteredBorrowings?.length || 0} of {overdueBorrowings?.length || 0} overdue books
+
+              {/* <TabsContent value="available" className="mt-0">
+                <div className="max-w-md mx-auto p-6 bg-background rounded-lg shadow">
+                  <div className="mb-4 flex items-center gap-2">
+                    <Input
+                      placeholder="Enter ISBN number..."
+                      value={isbnInput}
+                      onChange={e => {
+                        const value = e.target.value;
+                        if (/\D/.test(value)) {
+                          setIsbnError("Sorry, only integers accepted.");
+                        } else {
+                          setIsbnError("");
+                        }
+                        setIsbnInput(value);
+                      }}
+                      className="flex-1"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleCheckIsbn();
+                      }}
+                    />
+                    {isbnError && (
+                      <div className="text-red-500 text-sm mt-1">{isbnError}</div>
+                    )}
+                    <Button onClick={handleCheckIsbn} variant="outline">
+                      <Search className="h-4 w-4 mr-1" /> Check
+                    </Button>
                   </div>
-                </CardFooter>
-              </TabsContent>
-            </Card>
-          </motion.div>
-        </Tabs>
-
-        {/* Return Dialog */}
-        <Dialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Return Book</DialogTitle>
-              <DialogDescription>
-                Process the return of the book and calculate any applicable fines.
-              </DialogDescription>
-            </DialogHeader>
-
-            {selectedBorrowing && (
-              <div className="space-y-4">
-                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="h-12 w-12 bg-primary-100 dark:bg-primary-800 rounded-lg flex items-center justify-center text-primary-600 dark:text-primary-400">
-                      <RotateCcw className="h-5 w-5" />
+                  {isbnResult === undefined && (
+                    <div className="text-slate-500 text-center">Enter an ISBN to check availability.</div>
+                  )}
+                  {isbnResult === "notfound" && (
+                    <div className="flex flex-col items-center text-slate-500 py-8">
+                      <AlertTriangle className="h-8 w-8 mb-2 text-yellow-500" />
+                      Book not found for ISBN: <span className="font-mono">{isbnInput}</span>
                     </div>
-                    <div>
-                      <h3 className="font-medium">{selectedBorrowing.book.title}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {selectedBorrowing.book.author}
-                      </p>
-                      <div className="mt-1 text-xs">
-                        <span className="font-medium">Borrowed by:</span>{" "}
-                        {selectedBorrowing.user.name}
+                  )}
+                  {isbnResult && isbnResult !== "notfound" && (
+                    <div className="flex flex-col items-center gap-4 py-6">
+                      <div className="flex items-center gap-3">
+                        <BookOpen className="h-8 w-8 text-primary-600" />
+                        <div>
+                          <div className="font-bold text-lg">{isbnResult.title}</div>
+                          <div className="text-slate-500">{isbnResult.author}</div>
+                          <div className="text-xs mt-1">ISBN: <span className="font-mono">{isbnResult.isbn}</span></div>
+                          <div className="text-xs mt-1">Category: {isbnResult.category}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        {isbnResult.available && isbnResult.available > 0 ? (
+                          <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="h-5 w-5" /> Available ({isbnResult.available} of {isbnResult.quantity})</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-red-600"><AlertTriangle className="h-5 w-5" /> Not Available</span>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
+              </TabsContent> */}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 border rounded-lg">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      Borrow Date
-                    </div>
-                    <div className="flex items-center mt-1">
-                      <Clock className="h-4 w-4 mr-1 text-blue-500" />
-                      <span className="font-medium">
-                        {new Date(selectedBorrowing.borrowDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
+              {/* <TabsContent value="borrowed" className="mt-0">
+                <BookTable
+                  books={displayedBooks
+                    .filter((book) => book.available < book.quantity)
+                    .map((book) => ({
+                      ...book,
+                    }))}
+                  type="all"
+                  onEdit={(book) => setBookToEdit(book as Book)}
+                  onDelete={(id) => setBookToDelete(id)}
+                  isLoading={isLoading || isSearching}
+                />
+              </TabsContent> */}
+            </motion.div>
+          </Tabs>
+        </div>
 
-                  <div className="p-3 border rounded-lg">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      Due Date
-                    </div>
-                    <div className="flex items-center mt-1">
-                      {new Date(selectedBorrowing.dueDate) < new Date() ? (
-                        <AlertTriangle className="h-4 w-4 mr-1 text-red-500" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-                      )}
-                      <span className="font-medium">
-                        {new Date(selectedBorrowing.dueDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+        {/* Edit Book Dialog */}
+        {bookToEdit && (
+          <Dialog
+            open={Boolean(bookToEdit)}
+            onOpenChange={(open) => !open && setBookToEdit(null)}
+          >
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Edit Book</DialogTitle>
+                <DialogDescription>
+                  Update the book details. Click save when you're done.
+                </DialogDescription>
+              </DialogHeader>
+              <BookForm
+                onSubmit={handleUpdateBook}
+                defaultValues={bookToEdit}
+                isSubmitting={updateBookMutation.isPending}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
 
-                <div className="border-t pt-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Fine Amount ($)
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="pl-10"
-                      value={fineAmount}
-                      onChange={(e) => setFineAmount(e.target.value)}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    {Number(fineAmount) > 0
-                      ? "Fine will be recorded and the student will be notified."
-                      : "No fine will be charged for this return."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setReturnDialogOpen(false)}
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          open={bookToDelete !== null}
+          onOpenChange={(open) => !open && setBookToDelete(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this book? This action cannot be
+                undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteBook}
+                disabled={deleteBookMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedBorrowing) {
-                    returnBookMutation.mutate({
-                      id: selectedBorrowing.id,
-                      fine: Number(fineAmount),
-                    });
-                  }
-                }}
-                disabled={returnBookMutation.isPending}
-              >
-                {returnBookMutation.isPending ? (
+                {deleteBookMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    Deleting...
                   </>
                 ) : (
                   <>
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Confirm Return
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
                   </>
                 )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* QR Scanner */}
-        <QRScanner
-          isOpen={isQrScannerOpen}
-          onClose={() => setIsQrScannerOpen(false)}
-          onScan={handleQrScan}
-        />
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        <AlertDialog open={!!bookToReturn} onOpenChange={open => !open && setBookToReturn(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Return Book</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to return <b>{bookToReturn?.isbn}</b>?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setBookToReturn(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  // Call your API here, e.g. returnBookMutation.mutate(bookToReturn.id)
+                    if (bookToReturn) {
+                      try {
+                        returnBookLibrarian(bookToReturn.borrowId, bookToReturn.email);
+                        // await apiRequest("POST", `/api/books/return/${bookToReturn.id}`);
+                        toast({
+                          title: "Book returned",
+                          description: `The book '${bookToReturn.isbn}' has been returned successfully.`,
+                        });
+                        queryClient.invalidateQueries({ queryKey: ["/api/books"] });
+                      } catch (error: any) {
+                        toast({
+                          title: "Failed to return book",
+                          description: error.message || "An error occurred.",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  setBookToReturn(null);
+                }}
+              >
+                Return
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
 };
 
-export default ReturnBooks;
+export default ManageBooks;

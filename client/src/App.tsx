@@ -15,7 +15,7 @@ import ManageBooks from "@/pages/librarian/manage-books";
 import IssueBooks from "@/pages/librarian/issue-books";
 import ReturnBooks from "@/pages/librarian/return-books";
 import ManageStudents from "@/pages/librarian/manage-students";
-import BorrowBooks from "@/pages/student/borrow-books";
+import BorrowBooks from "@/pages/student/borrow";
 import StudentReturn from "@/pages/student/return-books";
 import ViewStatus from "@/pages/student/view-status";
 import RequestBooks from "@/pages/student/request-books";

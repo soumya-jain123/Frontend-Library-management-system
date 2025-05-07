@@ -27,9 +27,42 @@ const ViewStatus = () => {
   const [activeTab, setActiveTab] = useState("current");
 
   // Fetch user's borrowings
-  const { data: borrowings, isLoading: isLoadingBorrowings } = useQuery<Borrowing[]>({
-    queryKey: [`/api/borrowings/user/${user?.id}`],
-    enabled: !!user,
+// 1. Helper to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No auth token found");
+    return {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+  };
+
+  // 2. Fetch function for borrow history
+  const fetchBorrowHistory = async (): Promise<Borrowing[]> => {
+    const res = await fetch(
+      "http://127.0.0.1:8080/user/get-borrow-history",
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Error ${res.status}: ${text}`);
+    }
+    return res.json();
+  };
+
+  // 3. React Query hook
+  const {
+    data: borrowings,
+    isLoading: isLoadingBorrowings,
+    error: borrowError,
+  } = useQuery<Borrowing[]>({
+    queryKey: ["/user/get-borrow-history"],   // unique cache key
+    queryFn: fetchBorrowHistory,        // fetch function
+    enabled: Boolean(localStorage.getItem("authToken")), // only run if authed
+    retry: 1,                           // optional: retry once on failure
   });
 
   // Fetch user's book requests
@@ -44,6 +77,35 @@ const ViewStatus = () => {
     enabled: !!user,
   });
 
+  async function fetchTotalFine(): Promise<number> {
+    const res = await fetch(
+      "http://127.0.0.1:8080/user/total-fine",
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Error ${res.status}: ${text}`);
+    }
+    // Spring serializes BigDecimal to a JSON number
+    return res.json();
+  }
+
+  const {
+    data: totalFine,
+    isLoading: isLoadingFine,
+    error: fineError,
+  } = useQuery<number>({
+    queryKey: ["/user/total-fine"],
+    queryFn: fetchTotalFine,
+    enabled: Boolean(localStorage.getItem("authToken")),
+    retry: 1,
+  });
+
+  console.log("Total fine:", totalFine);
+  
   // Fetch fine report
   const { data: fineReport } = useQuery<{ userId: number; totalFines: number }>({
     queryKey: [`/api/reports/fines/user/${user?.id}`],
@@ -208,9 +270,9 @@ const ViewStatus = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <div className="text-3xl font-bold">${fineReport?.totalFines || "0.00"}</div>
+                      <div className="text-3xl font-bold">Rs. {totalFine || "0.00"}</div>
                       <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                        fineReport?.totalFines ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30"
+                        totalFine > 0 ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30"
                       }`}>
                         {fineReport?.totalFines ? (
                           <DollarSign className="h-6 w-6 text-red-600 dark:text-red-400" />
@@ -220,13 +282,13 @@ const ViewStatus = () => {
                       </div>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                      {fineReport?.totalFines
+                      {totalFine > 0
                         ? "You have outstanding fines to pay"
                         : "You don't have any outstanding fines"}
                     </p>
                   </CardContent>
                   <CardFooter className="pt-0">
-                    {fineReport?.totalFines > 0 && (
+                    {totalFine > 0 && (
                       <Button variant="outline" size="sm" className="w-full">
                         <DollarSign className="h-4 w-4 mr-2" />
                         Pay Fines
@@ -270,7 +332,7 @@ const ViewStatus = () => {
                             className="mt-4"
                             asChild
                           >
-                            <Link href="/User/borrow">
+                            <Link href="/Student/borrow">
                               <BookOpen className="h-4 w-4 mr-2" />
                               Browse Books
                             </Link>
@@ -280,7 +342,7 @@ const ViewStatus = () => {
                         <div className="space-y-4">
                           {currentBorrowings.map((borrowing) => (
                             <div 
-                              key={borrowing.id} 
+                              key={borrowing.isbn} 
                               className={`p-4 border rounded-lg ${
                                 new Date(borrowing.dueDate) < new Date()
                                   ? "border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20"
@@ -294,9 +356,9 @@ const ViewStatus = () => {
                                 <div className="flex-1">
                                   <div className="flex justify-between">
                                     <div>
-                                      <h3 className="font-semibold">{borrowing.book?.title}</h3>
+                                      <h3 className="font-semibold">{borrowing.isbn}</h3>
                                       <p className="text-sm text-slate-600 dark:text-slate-400">
-                                        {borrowing.book?.author}
+                                        {borrowing.issueDate}
                                       </p>
                                     </div>
                                     {new Date(borrowing.dueDate) < new Date() ? (
@@ -312,7 +374,7 @@ const ViewStatus = () => {
                                     )}
                                   </div>
                                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                    <span>Borrowed: {new Date(borrowing.borrowDate).toLocaleDateString()}</span>
+                                    <span>Borrowed: {new Date(borrowing.issueDate).toLocaleDateString()}</span>
                                     <span>•</span>
                                     <span className={new Date(borrowing.dueDate) < new Date() ? "text-red-500 font-medium" : ""}>
                                       Due: {new Date(borrowing.dueDate).toLocaleDateString()}
@@ -377,7 +439,7 @@ const ViewStatus = () => {
                       <div className="space-y-4">
                         {pastBorrowings.map((borrowing) => (
                           <div 
-                            key={borrowing.id} 
+                            key={borrowing.isbn} 
                             className="p-4 border rounded-lg border-slate-200 dark:border-slate-700"
                           >
                             <div className="flex items-start gap-3">
@@ -387,9 +449,9 @@ const ViewStatus = () => {
                               <div className="flex-1">
                                 <div className="flex justify-between">
                                   <div>
-                                    <h3 className="font-semibold">{borrowing.book?.title}</h3>
+                                    <h3 className="font-semibold">{borrowing.isbn}</h3>
                                     <p className="text-sm text-slate-600 dark:text-slate-400">
-                                      {borrowing.book?.author}
+                                      {borrowing.returnDate ? "Returned" : "Borrowed"}
                                     </p>
                                   </div>
                                   <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20">

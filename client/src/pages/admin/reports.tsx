@@ -40,6 +40,8 @@ import {
 import { motion } from "framer-motion";
 import { CalendarDays, BookOpen, DollarSign, Library, Users, Loader2 } from "lucide-react";
 import { User, Book, Borrowing } from "@shared/schema";
+import { get } from "react-hook-form";
+
 
 // Helper function to get month name
 const getMonthName = (monthIndex: number) => {
@@ -68,19 +70,155 @@ const Reports = () => {
   const currentMonth = currentDate.getMonth();
   
   // Fetch users 
-  const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+
+  // 2. Fetcher for all users
+  async function fetchAllUsers(): Promise<User[]> {
+    const res = await fetch(
+      "http://127.0.0.1:8080/admin/get-all-users",
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Error ${res.status}: ${txt}`);
+    }
+
+    let data = await res.json();
+    return data.userList;
+  }
+
+  // 3. React-Query hook
+  const {
+    data: users,
+    isLoading: isLoadingUsers,
+    error: usersError,
+  } = useQuery<User[]>({
+    queryKey: ["/admin/get-all-users"],
+    queryFn: fetchAllUsers,
+    retry: 1,
   });
   
+
   // Fetch books
-  const { data: books, isLoading: isLoadingBooks } = useQuery<Book[]>({
-    queryKey: ["/api/books"],
+  const {
+    data: totalBooks,
+    isLoading: isLoadingTotal,
+    error: totalError,
+  } = useQuery<number>({
+    queryKey: ["/alluser/get-total-books"],
+    queryFn: async () => {
+      const res = await fetch(
+        "http://127.0.0.1:8080/alluser/get-total-books",
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+        }
+      );
+
+      // console.log("Response:", res);
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Error ${res.status}: ${text}`);
+      }
+
+      return res.json();
+    },
+    retry: 1,
   });
-  
+
+  // 2. Once you have the total, fetch that many books
+  const {
+    data: books,
+    isLoading: isLoadingBooks,
+    error: booksError,
+  } = useQuery<Book[]>({
+    queryKey: ["/alluser/get-total-books", totalBooks],
+    queryFn: () =>
+      // const url = `http://127.0.0.1:8080/alluser/get-all-books/${totalBooks}`;
+      fetch(
+        `http://127.0.0.1:8080/alluser/get-all-books/${totalBooks}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+        }
+      ).then(res => {
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        return res.json().then((page: { content: Book[] }) => page.content);
+      }),
+    // enabled: typeof totalBooks === "number" && totalBooks > 0,
+  });
+
   // Fetch active borrowings
-  const { data: activeBorrowings, isLoading: isLoadingBorrowings } = useQuery<Borrowing[]>({
-    queryKey: ["/api/borrowings/active"],
+  // 1. Auth header helper (re-use across hooks)
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("No auth token found");
+    return {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+  };
+
+  // 2. Fetcher for admin’s issued books
+  async function fetchAdminIssuedBooks(): Promise<Borrowing[]> {
+    const res = await fetch(
+      "http://127.0.0.1:8080/admin/get-issued-books",
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }
+    );
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Error ${res.status}: ${txt}`);
+    }
+    return res.json();
+  }
+
+  // 3. React-Query hook
+  const {
+    data: activeBorrowings,
+    isLoading: isLoadingBorrowings,
+    error: borrowError,
+  } = useQuery<Borrowing[]>({
+    queryKey: ["/admin/get-issued-books"],  // your existing key
+    queryFn: fetchAdminIssuedBooks,         // point it at the admin endpoint
+    // no need for `enabled` unless you want to gate by role
+    retry: 1,
   });
+
+  // 2. Fetcher for total fines (returns a number)
+  async function fetchAllTotalFines(): Promise<number> {
+    const res = await fetch(
+      "http://127.0.0.1:8080/admin/total-fine",
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Error ${res.status}: ${txt}`);
+    }
+    // BigDecimal serializes to JSON number
+    return res.json();
+  }
+  
+  // 3. React-Query hook
+  const {
+    data: allTotalFines,
+    isLoading: isLoadingFines,
+    error: finesError,
+  } = useQuery<number>({
+    queryKey: ["adminAllTotalFines"],
+    queryFn: fetchAllTotalFines,
+    retry: 1,
+  });
+
   
   // Fetch monthly fines for the current year
   const { data: currentMonthFines } = useQuery<{ totalFines: number }>({
@@ -95,32 +233,42 @@ const Reports = () => {
   
   // Prepare user role data for pie chart
   const userRoleData = users ? [
-    { name: "Students", value: users.filter(user => user.role === "student").length },
-    { name: "Librarians", value: users.filter(user => user.role === "librarian").length },
-    { name: "Admins", value: users.filter(user => user.role === "admin").length }
+    { name: "User", value: users.filter(user => user.role === "USER").length },
+    { name: "Librarians", value: users.filter(user => user.role === "LIBRARIAN").length },
+    { name: "Admins", value: users.filter(user => user.role === "ADMIN").length }
   ] : [];
   
   // Prepare book category data
-  const bookCategoryData = books ? 
-    Array.from(
+// Assuming `books` is your array of book objects
+const bookGenreData = books
+  ? Array.from(
       books.reduce((acc, book) => {
-        acc.set(book.category, (acc.get(book.category) || 0) + 1);
+        book.genres
+          .split(",")
+          .map(g => g.trim())
+          .forEach(genre => {
+            acc.set(genre, (acc.get(genre) || 0) + 1);
+          });
         return acc;
-      }, new Map())
-    ).map(([name, value]) => ({ name, value })) : [];
-  
-  // Book borrowing by month (simulated data)
-  const borrowingByMonthData = Array.from({ length: 12 }, (_, i) => ({
-    month: getMonthName(i),
-    borrowings: Math.floor(Math.random() * 50) + 10,
-    returns: Math.floor(Math.random() * 40) + 5,
-  }));
-  
+      }, new Map<string, number>())
+    ).map(([name, value]) => ({ name, value }))
+  : [];
+
+  // Now `bookGenreData` is an array like:
+  // [ { name: "History", value: 5 }, { name: "Nonfiction", value: 8 }, … ]
+  console.log(bookGenreData);
+
+    // Book borrowing by month (simulated data)
+    const borrowingByMonthData = Array.from({ length: 12 }, (_, i) => ({
+      month: getMonthName(i),
+      borrowings: Math.floor(Math.random() * 50) + 10,
+      returns: Math.floor(Math.random() * 40) + 5,
+    }));
   // Loading state
   const isLoading = isLoadingUsers || isLoadingBooks || isLoadingBorrowings;
   
   const calculateTotalFines = () => {
-    return currentMonthFines?.totalFines || 0;
+    return allTotalFines || 0;
   };
   
   return (
@@ -166,7 +314,7 @@ const Reports = () => {
                         Active Users
                       </p>
                       <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                        {users?.filter(u => u.active).length || 0}
+                        {users?.filter(u => u.enabled).length || 0}
                       </p>
                     </div>
                     <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 text-green-600 dark:text-green-400">
@@ -277,14 +425,14 @@ const Reports = () => {
                       <CardContent>
                         <div className="h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={bookCategoryData}>
+                            <BarChart data={bookGenreData}>
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis dataKey="name" />
                               <YAxis />
                               <Tooltip />
                               <Legend />
                               <Bar dataKey="value" name="Books" fill="#4338ca">
-                                {bookCategoryData.map((entry, index) => (
+                                {bookGenreData.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={getRandomColor(index)} />
                                 ))}
                               </Bar>

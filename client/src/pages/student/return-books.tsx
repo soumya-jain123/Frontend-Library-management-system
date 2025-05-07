@@ -53,9 +53,25 @@ const UserReturnBooks = () => {
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
 
   // Fetch user's borrowings
-  const { data: borrowings, isLoading } = useQuery<Borrowing[]>({
-    queryKey: [`/api/borrowings/user/${user?.id}`],
-    enabled: !!user,
+  const { data: borrowings, isLoading } = useQuery({
+    queryKey: [`/user/get-borrowed-books`],
+    // enabled: !!user
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("No token found in localStorage");
+      }
+  
+      const response = await fetch('http://127.0.0.1:8080/user/get-borrowed-books', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      return data; // Assuming the response contains the list of books
+    },
   });
 
   // Return book mutation (this would actually be handled by a librarian in the real system)
@@ -63,12 +79,28 @@ const UserReturnBooks = () => {
     mutationFn: async ({ id, fine }: { id: number; fine: number }) => {
       // Note: In a real system, Users wouldn't be able to return books directly
       // This would be a request for the librarian to process the return
-      const res = await apiRequest("POST", `/api/book-returns/request`, { 
-        borrowingId: id,
-        userId: user?.id 
-      });
-      return await res.json();
-    },
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error("No token found in localStorage");
+        }
+        
+        let payload = {
+          "borrowId" : id,
+        }
+
+        const response = await fetch('http://127.0.0.1:8080/user/return-book', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+  
+  
+        const data = await response.json();
+        return data; // Assuming the response contains the list of books
+      },
     onSuccess: () => {
       toast({
         title: "Return request submitted",
@@ -78,7 +110,7 @@ const UserReturnBooks = () => {
       setSelectedBorrowing(null);
       
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: [`/api/borrowings/user/${user?.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/user/get-borrowed-books`] });
     },
     onError: (error: Error) => {
       toast({
@@ -117,9 +149,9 @@ const UserReturnBooks = () => {
   // Filter borrowings based on search term
   const filteredBorrowings = processedBorrowings.filter(
     borrowing =>
-      borrowing.book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      borrowing.book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      borrowing.book.category.toLowerCase().includes(searchTerm.toLowerCase())
+      borrowing.isbn.includes(searchTerm.toLowerCase())
+      // borrowing.book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      // borrowing.book.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Handle return book action
@@ -245,7 +277,7 @@ const UserReturnBooks = () => {
                     <Button 
                       variant="outline" 
                       className="mt-4"
-                      onClick={() => window.location.href = "/User/borrow"}
+                      onClick={() => window.location.href = "/Student/borrow"}
                     >
                       <BookOpen className="h-4 w-4 mr-2" />
                       Borrow Books
@@ -268,9 +300,9 @@ const UserReturnBooks = () => {
                       <div className="flex-1">
                         <div className="flex justify-between">
                           <div>
-                            <h3 className="font-semibold">{borrowing.book.title}</h3>
+                            <h3 className="font-semibold">{borrowing.isbn}</h3>
                             <p className="text-sm text-slate-600 dark:text-slate-400">
-                              {borrowing.book.author}
+                              {borrowing.dueDate}
                             </p>
                           </div>
                           {borrowing.isOverdue && (
@@ -292,7 +324,7 @@ const UserReturnBooks = () => {
                             </span>
                           )}
                           <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">
-                            {borrowing.book.category}
+                            {borrowing.issueDate}
                           </span>
                         </div>
                         <div className="mt-3 flex justify-end">
@@ -336,16 +368,16 @@ const UserReturnBooks = () => {
                     <BookOpen className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">{selectedBorrowing.book.title}</h3>
+                    <h3 className="font-semibold">{selectedBorrowing.isbn}</h3>
                     <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {selectedBorrowing.book.author}
+                      {selectedBorrowing.dueDate}
                     </p>
                     <div className="mt-2 text-xs flex gap-2">
                       <span className="bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full">
-                        {selectedBorrowing.book.category}
+                        {selectedBorrowing.issueDate}
                       </span>
                       <span className="bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full">
-                        ISBN: {selectedBorrowing.book.isbn.substring(0, 6)}...
+                        ISBN: {selectedBorrowing.isbn}...
                       </span>
                     </div>
                   </div>
@@ -362,7 +394,7 @@ const UserReturnBooks = () => {
                         Borrowed On
                       </div>
                       <div className="text-sm font-medium mt-1">
-                        {new Date(selectedBorrowing.borrowDate).toLocaleDateString()}
+                        {new Date(selectedBorrowing.issueDate).toLocaleDateString()}
                       </div>
                     </div>
                     
@@ -389,11 +421,12 @@ const UserReturnBooks = () => {
                             Overdue by {selectedBorrowing.daysOverdue} {selectedBorrowing.daysOverdue === 1 ? "day" : "days"}
                           </p>
                           <p className="text-xs text-red-600 dark:text-red-400">
-                            Late fee: $0.50 per day
+                            Late fee: 5 rs per day
                           </p>
                         </div>
                         <div className="text-lg font-bold text-red-700 dark:text-red-400">
-                          ${selectedBorrowing.estimatedFine.toFixed(2)}
+                          ${
+                          selectedBorrowing.fineAmount}
                         </div>
                       </div>
                     </div>
@@ -420,8 +453,8 @@ const UserReturnBooks = () => {
                 onClick={() => {
                   if (selectedBorrowing) {
                     returnBookMutation.mutate({
-                      id: selectedBorrowing.id,
-                      fine: selectedBorrowing.estimatedFine
+                      id: selectedBorrowing.borrowId,
+                      fine: selectedBorrowing.fineAmount
                     });
                   }
                 }}
