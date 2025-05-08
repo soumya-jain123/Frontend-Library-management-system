@@ -137,7 +137,7 @@ const AdminDashboard = () => {
         
         <StatsCard 
           title="Monthly Fines"
-          value={`$${fineData || 0}`}
+          value={`Rs. ${fineData || 0}`}
           icon={<BarChart3 className="h-5 w-5" />}
           description="Revenue from fines"
           className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
@@ -240,7 +240,7 @@ const AdminDashboard = () => {
                 <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-md">
                   <AlertOctagon className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm font-medium">Fine collected: $12.50</p>
+                    <p className="text-sm font-medium">Fine collected: Rs. 12.50</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">From Student Michael - 3 days ago</p>
                   </div>
                 </div>
