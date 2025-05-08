@@ -350,7 +350,7 @@ const bookGenreData = books
                         Monthly Fines
                       </p>
                       <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                        ${calculateTotalFines()}
+                        Rs. {calculateTotalFines()}
                       </p>
                     </div>
                     <div className="rounded-full bg-amber-100 dark:bg-amber-900/30 p-3 text-amber-600 dark:text-amber-400">
@@ -362,10 +362,10 @@ const bookGenreData = books
             </div>
             
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsList className="grid w-full grid-cols-1 mb-4">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="fines">Fine Reports</TabsTrigger>
-                <TabsTrigger value="activities">Activity Reports</TabsTrigger>
+                {/* <TabsTrigger value="fines">Fine Reports</TabsTrigger>
+                <TabsTrigger value="activities">Activity Reports</TabsTrigger> */}
               </TabsList>
               
               <TabsContent value="overview">
@@ -445,7 +445,7 @@ const bookGenreData = books
                 </div>
               </TabsContent>
               
-              <TabsContent value="fines">
+              {/* <TabsContent value="fines">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -511,9 +511,9 @@ const bookGenreData = books
                     </Table>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </TabsContent> */}
               
-              <TabsContent value="activities">
+              {/* <TabsContent value="activities">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -585,7 +585,7 @@ const bookGenreData = books
                     </Table>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </TabsContent> */}
             </Tabs>
           </>
         )}

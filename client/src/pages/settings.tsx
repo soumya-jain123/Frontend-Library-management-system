@@ -81,7 +81,7 @@ const Settings = () => {
             {user?.role !== "admin" && (
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
             )}
-            <TabsTrigger value="privacy">Privacy</TabsTrigger>
+            {/* <TabsTrigger value="privacy">Privacy</TabsTrigger> */}
             <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
 
@@ -252,83 +252,83 @@ const Settings = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="privacy">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Privacy Settings</CardTitle>
-                  <CardDescription>
-                    Control your privacy and data sharing preferences
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5 h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
-                          <EyeOff className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <Label htmlFor="hide-overdue">Hide Overdue Warnings</Label>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Hide overdue warnings on your dashboard
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        id="hide-overdue"
-                        checked={hideOverdueWarnings}
-                        onCheckedChange={setHideOverdueWarnings}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5 h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
-                          <Eye className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <Label>Borrowing History Privacy</Label>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Control who can see your borrowing history
-                          </p>
-                        </div>
-                      </div>
-                      <Select defaultValue="librarians">
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Select visibility" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="public">All Users</SelectItem>
-                          <SelectItem value="librarians">Librarians Only</SelectItem>
-                          <SelectItem value="private">Only Me</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium mb-2">Data Management</h3>
+            {/* <TabsContent value="privacy">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Privacy Settings</CardTitle>
+                    <CardDescription>
+                      Control your privacy and data sharing preferences
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
                     <div className="space-y-4">
-                      <div>
-                        <p className="text-sm mb-2">Export your library data</p>
-                        <Button variant="outline" size="sm">
-                          Export Data
-                        </Button>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                            <EyeOff className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <Label htmlFor="hide-overdue">Hide Overdue Warnings</Label>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Hide overdue warnings on your dashboard
+                            </p>
+                          </div>
+                        </div>
+                        <Switch
+                          id="hide-overdue"
+                          checked={hideOverdueWarnings}
+                          onCheckedChange={setHideOverdueWarnings}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                            <Eye className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <Label>Borrowing History Privacy</Label>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Control who can see your borrowing history
+                            </p>
+                          </div>
+                        </div>
+                        <Select defaultValue="librarians">
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select visibility" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="public">All Users</SelectItem>
+                            <SelectItem value="librarians">Librarians Only</SelectItem>
+                            <SelectItem value="private">Only Me</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button>Save Privacy Settings</Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          </TabsContent>
+
+                    <div className="pt-4 border-t">
+                      <h3 className="text-sm font-medium mb-2">Data Management</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm mb-2">Export your library data</p>
+                          <Button variant="outline" size="sm">
+                            Export Data
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button>Save Privacy Settings</Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            </TabsContent> */}
 
           <TabsContent value="account">
             <motion.div

@@ -320,7 +320,7 @@ const UserReturnBooks = () => {
                           {borrowing.isOverdue && (
                             <span className="flex items-center text-red-500">
                               <DollarSign className="h-3 w-3 mr-1" />
-                              Est. Fine: ${borrowing.estimatedFine.toFixed(2)}
+                              Est. Fine: Rs. {borrowing.estimatedFine.toFixed(2)}
                             </span>
                           )}
                           <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">
@@ -425,7 +425,7 @@ const UserReturnBooks = () => {
                           </p>
                         </div>
                         <div className="text-lg font-bold text-red-700 dark:text-red-400">
-                          ${
+                          Rs. {
                           selectedBorrowing.fineAmount}
                         </div>
                       </div>
